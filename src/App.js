@@ -42,6 +42,7 @@ import Exchange from './components/Exchange'
 import Bottom from './components/Bottom';
 import customRPCHint from './customRPCHint.png';
 import namehash from 'eth-ens-namehash'
+import { Card } from 'rimble-ui';
 
 //https://github.com/lesnitsky/react-native-webview-messaging/blob/v1/examples/react-native/web/index.js
 import RNMessageChannel from 'react-native-webview-messaging';
@@ -1293,7 +1294,7 @@ render() {
             console.log("TARGET",targetAddress)
             return (
               <div>
-                <div className="main-card card w-100" style={{zIndex:1}}>
+                <Card>
 
                   <NavCard title={(
                     <div>
@@ -1317,7 +1318,8 @@ render() {
                     goBack={this.goBack.bind(this)}
                     dollarDisplay={dollarDisplay}
                   />
-                </div>
+                </Card>
+
                 <Bottom
                   action={()=>{
                     this.changeView('main')
@@ -1382,7 +1384,7 @@ render() {
             return (
               <div>
                 {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
+                <Card>
 
 
                   {extraTokens}
@@ -1417,9 +1419,10 @@ render() {
                     block={this.state.block}
                     recentTxs={ERC20TOKEN?this.state.fullRecentTxs:this.state.recentTxs}
                   />
-                </div>
+
+                </Card>
                 <Bottom
-                  icon={"wrench"}
+                  icon={"Settings"}
                   text={i18n.t('advance_title')}
                   action={()=>{
                     this.changeView('advanced')
@@ -1431,7 +1434,7 @@ render() {
             return (
               <div>
                 {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
+                <Card>
 
                   <NavCard title={i18n.t('advance_title')} goBack={this.goBack.bind(this)}/>
                   <Advanced
@@ -1445,7 +1448,7 @@ render() {
                     goBack={this.goBack.bind(this)}
                     setPossibleNewPrivateKey={this.setPossibleNewPrivateKey.bind(this)}
                   />
-                </div>
+                </Card>
                 <Bottom
                   action={()=>{
                     this.changeView('main')
@@ -1554,7 +1557,7 @@ render() {
             return (
               <div>
                 {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
+                <Card>
 
                   <NavCard title={i18n.t('receipt_title')} goBack={this.goBack.bind(this)}/>
                   <Receipt
@@ -1577,7 +1580,7 @@ render() {
                     fullRecentTxs={this.state.fullRecentTxs}
                     recentTxs={this.state.recentTxs}
                   />
-                </div>
+                </Card>
                 <Bottom
                   action={this.goBack.bind(this)}
                 />
@@ -1587,7 +1590,7 @@ render() {
             return (
               <div>
                 {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
+                <Card>
 
                   <NavCard title={i18n.t('receive_title')} goBack={this.goBack.bind(this)}/>
                   {defaultBalanceDisplay}
@@ -1611,7 +1614,7 @@ render() {
                     fullRecentTxs={this.state.fullRecentTxs}
                     recentTxs={this.state.recentTxs}
                   />
-                </div>
+                </Card>
                 <Bottom
                   action={this.goBack.bind(this)}
                 />
@@ -1621,7 +1624,7 @@ render() {
             return (
               <div>
                 {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
+                <Card>
 
                   <NavCard title={i18n.t('request_funds_title')} goBack={this.goBack.bind(this)}/>
                   {defaultBalanceDisplay}
@@ -1642,7 +1645,7 @@ render() {
                     fullRecentTxs={this.state.fullRecentTxs}
                     recentTxs={this.state.recentTxs}
                   />
-                </div>
+                </Card>
                 <Bottom
                   action={this.goBack.bind(this)}
                 />
@@ -1658,7 +1661,7 @@ render() {
               return (
                 <div>
                   {this.state.scannerOpen ? sendByScan : null}
-                  <div className="main-card card w-100" style={{zIndex:1}}>
+                  <Card>
 
                     <NavCard title={url} goBack={this.goBack.bind(this)} />
                     <Share
@@ -1672,7 +1675,7 @@ render() {
                       changeAlert={this.changeAlert}
                       goBack={this.goBack.bind(this)}
                     />
-                  </div>
+                  </Card>
                   <Bottom
                     action={this.goBack.bind(this)}
                   />
@@ -1682,7 +1685,7 @@ render() {
               return (
                 <div>
                   {this.state.scannerOpen ? sendByScan : null}
-                  <div className="main-card card w-100" style={{zIndex:1}}>
+                  <Card>
 
                     <NavCard title={'Share Link'} goBack={this.goBack.bind(this)} />
                       <ShareLink
@@ -1693,7 +1696,7 @@ render() {
                         changeAlert={this.changeAlert}
                         goBack={this.goBack.bind(this)}
                       />
-                  </div>
+                  </Card>
                   <Bottom
                     action={this.goBack.bind(this)}
                   />
@@ -1703,7 +1706,7 @@ render() {
             return (
               <div>
                 {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
+                <Card>
 
                   <NavCard title={'Send with Link'} goBack={this.goBack.bind(this)} />
                   {defaultBalanceDisplay}
@@ -1748,7 +1751,7 @@ render() {
                     convertToDollar={convertToDollar}
                     dollarSymbol={dollarSymbol}
                   />
-                </div>
+                </Card>
                 <Bottom
                   text={i18n.t('cancel')}
                   action={this.goBack.bind(this)}
@@ -1759,7 +1762,7 @@ render() {
             return (
               <div>
                 {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
+                <Card>
 
                   <NavCard title={"Burn Private Key"} goBack={this.goBack.bind(this)}/>
                   {defaultBalanceDisplay}
@@ -1783,7 +1786,7 @@ render() {
                     }
                   }}
                   />
-                </div>
+                </Card>
                 <Bottom
                   text={i18n.t('cancel')}
                   action={this.goBack.bind(this)}
@@ -1794,7 +1797,7 @@ render() {
             return (
               <div>
                 {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
+                <Card>
 
                   <NavCard title={"Cash Out"} goBack={this.goBack.bind(this)}/>
                   {defaultBalanceDisplay}
@@ -1806,7 +1809,7 @@ render() {
                     goBack={this.goBack.bind(this)}
                     dollarDisplay={dollarDisplay}
                   />
-                </div>
+                </Card>
                 <Bottom
                   action={this.goBack.bind(this)}
                 />
@@ -1817,7 +1820,7 @@ render() {
             return (
               <div>
                 {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
+                <Card>
 
                   <NavCard title={i18n.t('exchange_title')} goBack={this.goBack.bind(this)}/>
                   <Exchange
@@ -1854,7 +1857,7 @@ render() {
                     goBack={this.goBack.bind(this)}
                     dollarDisplay={dollarDisplay}
                   />
-                </div>
+                </Card>
                 <Bottom
                   action={this.goBack.bind(this)}
                 />
@@ -1864,7 +1867,7 @@ render() {
             return (
               <div>
                 {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
+                <Card>
 
                   <NavCard title={i18n.t('vendors')} goBack={this.goBack.bind(this)}/>
                   <Vendors
@@ -1883,7 +1886,7 @@ render() {
                     goBack={this.goBack.bind(this)}
                     dollarDisplay={dollarDisplay}
                   />
-                </div>
+                </Card>
                 <Bottom
                   action={this.goBack.bind(this)}
                 />
