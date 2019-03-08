@@ -1178,9 +1178,6 @@ render() {
 
             <div>
               {header}
-
-
-
             {web3 /*&& this.checkNetwork()*/ && (() => {
               //console.log("VIEW:",view)
 
@@ -1203,6 +1200,7 @@ render() {
                     </div>
                   )
                 }
+
 
 
                 if(this.state.isAdmin){
@@ -1386,7 +1384,6 @@ render() {
                 )
               }
 
-
               let badgeDisplay = ""
               if(this.state.badgeBalance>0){
                 badgeDisplay = (
@@ -1407,6 +1404,7 @@ render() {
                       changeAlert={this.changeAlert}
                       dollarDisplay={dollarDisplay}
                       tokenSendV2={tokenSendV2.bind(this)}
+                      selectBadge={this.selectBadge.bind(this)}
                     />
                     <Ruler/>
                   </div>
@@ -1491,14 +1489,14 @@ render() {
                         changeView={this.changeView}
                         privateKey={metaAccount.privateKey}
                         changeAlert={this.changeAlert}
-                        goBack={this.goBack.bind(this)}
-                        setPossibleNewPrivateKey={this.setPossibleNewPrivateKey.bind(this)}
+                        dollarDisplay={dollarDisplay}
+                        badge={this.state.badges[this.state.selectedBadge]}
+                        clearBadges={this.clearBadges.bind(this)}
                       />
                     </Card>
                     <Bottom
-                      action={()=>{
-                        this.changeView('main')
-                      }}
+                      text={i18n.t('done')}
+                      action={this.goBack.bind(this)}
                     />
                   </div>
                 )
@@ -1683,6 +1681,7 @@ render() {
                         fullTransactionsByAddress={this.state.fullTransactionsByAddress}
                         fullRecentTxs={this.state.fullRecentTxs}
                         recentTxs={this.state.recentTxs}
+                        block={this.state.block}
                       />
                     </Card>
                     <Bottom
@@ -1852,7 +1851,9 @@ render() {
                         mainnetweb3={this.state.mainnetweb3}
                         xdaiweb3={this.state.xdaiweb3}
                         daiContract={this.state.daiContract}
+                        pdaiContract={this.state.pdaiContract}
                         ensContract={this.state.ensContract}
+                        bridgeContract={this.state.bridgeContract}
                         isVendor={this.state.isVendor}
                         isAdmin={this.state.isAdmin}
                         contracts={this.state.contracts}
@@ -1861,6 +1862,7 @@ render() {
                         setGwei={this.setGwei}
                         network={this.state.network}
                         tx={this.state.tx}
+                        pTx={this.state.pTx}
                         web3={this.state.web3}
                         send={this.state.send}
                         nativeSend={this.state.nativeSend}
@@ -1868,9 +1870,8 @@ render() {
                         balance={balance}
                         goBack={this.goBack.bind(this)}
                         dollarDisplay={dollarDisplay}
-                        bridgeContract={this.state.bridgeContract}
-                        pTx={this.state.pTx}
-                        pdaiContract={this.state.pdaiContract}
+                        tokenSendV2={tokenSendV2.bind(this)}
+                        marketMaker={MARKET_MAKER}
                       />
                     </Card>
                     <Bottom
@@ -1967,113 +1968,113 @@ render() {
                   <div>unknown view</div>
                 )
               }
-        })()}
-        { ( false ||  !web3 /*|| !this.checkNetwork() */) &&
-          <div>
-            <Loader loaderImage={LOADERIMAGE} mainStyle={mainStyle}/>
-          </div>
-        }
-        { alert && <Footer alert={alert} changeAlert={this.changeAlert}/> }
-        </div>
-        <Dapparatus
-            config={{
-              DEBUG: false,
-              hide: true,
-              requiredNetwork: ['Unknown', 'xDai'],
-              metatxAccountGenerator: false,
-            }}
-            //used to pass a private key into Dapparatus
-            newPrivateKey={this.state.newPrivateKey}
-            fallbackWeb3Provider={WEB3_PROVIDER}
-            network="LeapTestnet"
-            xdaiProvider={XDAI_PROVIDER}
-            onUpdate={async (state) => {
-              //console.log("DAPPARATUS UPDATE",state)
-              if(ERC20TOKEN){
-                delete state.balance
-              }
-              if (state.xdaiweb3) {
-                let pdaiContract;
-                try{
-                  pdaiContract = new state.xdaiweb3.eth.Contract(require("./contracts/StableCoin.abi.js"),P_DAI_TOKEN_ADDR)
-                }catch(e){
-                  console.log("ERROR LOADING DAI Stablecoin Contract",e)
+            })()}
+            { ( false ||  !web3 /*|| !this.checkNetwork() */) &&
+              <div>
+                <Loader loaderImage={LOADERIMAGE} mainStyle={mainStyle}/>
+              </div>
+            }
+            { alert && <Footer alert={alert} changeAlert={this.changeAlert}/> }
+            </div>
+            <Dapparatus
+              config={{
+                DEBUG: false,
+                hide: true,
+                requiredNetwork: ['Unknown', 'xDai'],
+                metatxAccountGenerator: false,
+              }}
+              //used to pass a private key into Dapparatus
+              newPrivateKey={this.state.newPrivateKey}
+              fallbackWeb3Provider={WEB3_PROVIDER}
+              network="LeapTestnet"
+              xdaiProvider={XDAI_PROVIDER}
+              onUpdate={async (state) => {
+                //console.log("DAPPARATUS UPDATE",state)
+                if(ERC20TOKEN){
+                  delete state.balance
                 }
-
-                this.setState({pdaiContract});
-              }
-              if (state.web3Provider) {
-                state.web3 = new Web3(state.web3Provider)
-                this.setState(state,()=>{
-                  //console.log("state set:",this.state)
-                  if(this.state.possibleNewPrivateKey){
-                    this.dealWithPossibleNewPrivateKey()
+                if (state.xdaiweb3) {
+                  let pdaiContract;
+                  try{
+                    pdaiContract = new state.xdaiweb3.eth.Contract(require("./contracts/StableCoin.abi.js"),P_DAI_TOKEN_ADDR)
+                  }catch(e){
+                    console.log("ERROR LOADING DAI Stablecoin Contract",e)
                   }
-                  if(!this.state.parsingTheChain){
-                    this.setState({parsingTheChain:true},async ()=>{
-                      let upperBoundOfSearch = this.state.block
-                      //parse through recent transactions and store in local storage
 
-                      if(localStorage&&typeof localStorage.setItem == "function"){
+                  this.setState({pdaiContract});
+                }
+                if (state.web3Provider) {
+                  state.web3 = new Web3(state.web3Provider)
+                  this.setState(state,()=>{
+                    //console.log("state set:",this.state)
+                    if(this.state.possibleNewPrivateKey){
+                      this.dealWithPossibleNewPrivateKey()
+                    }
+                    if(!this.state.parsingTheChain){
+                      this.setState({parsingTheChain:true},async ()=>{
+                        let upperBoundOfSearch = this.state.block
+                        //parse through recent transactions and store in local storage
 
-                        let initResult = this.initRecentTxs()
-                        let recentTxs = initResult[0]
-                        let transactionsByAddress = initResult[1]
+                        if(localStorage&&typeof localStorage.setItem == "function"){
 
-                        let loadedBlocksTop = this.state.loadedBlocksTop
-                        if(!loadedBlocksTop){
-                          loadedBlocksTop = localStorage.getItem(this.state.account+"loadedBlocksTop")
-                        }
+                          let initResult = this.initRecentTxs()
+                          let recentTxs = initResult[0]
+                          let transactionsByAddress = initResult[1]
 
-                        //  Look back through previous blocks since this account
-                        //  was last online... this could be bad. We might need a
-                        //  central server keeping track of all these and delivering
-                        //  a list of recent transactions
-
-
-                        let updatedTxs = false
-                        if(!loadedBlocksTop || loadedBlocksTop<this.state.block){
-                          if(!loadedBlocksTop) loadedBlocksTop = Math.max(2,this.state.block-5)
-
-                          if(this.state.block - loadedBlocksTop > MAX_BLOCK_TO_LOOK_BACK){
-                            loadedBlocksTop = this.state.block-MAX_BLOCK_TO_LOOK_BACK
+                          let loadedBlocksTop = this.state.loadedBlocksTop
+                          if(!loadedBlocksTop){
+                            loadedBlocksTop = localStorage.getItem(this.state.account+"loadedBlocksTop")
                           }
 
-                          let paddedLoadedBlocks = parseInt(loadedBlocksTop)+BLOCKS_TO_PARSE_PER_BLOCKTIME
-                          //console.log("choosing the min of ",paddedLoadedBlocks,"and",this.state.block)
-                          let parseBlock=Math.min(paddedLoadedBlocks,this.state.block)
+                          //  Look back through previous blocks since this account
+                          //  was last online... this could be bad. We might need a
+                          //  central server keeping track of all these and delivering
+                          //  a list of recent transactions
 
-                          //console.log("MIN:",parseBlock)
-                          upperBoundOfSearch = parseBlock
-                          console.log(" +++++++======= Parsing recent blocks ~"+this.state.block)
-                          //first, if we are still back parsing, we need to look at *this* block too
-                          if(upperBoundOfSearch<this.state.block){
-                            for(let b=this.state.block;b>this.state.block-6;b--){
-                              //console.log(" ++ Parsing *CURRENT BLOCK* Block "+b+" for transactions...")
-                              updatedTxs = (await this.parseBlocks(b,recentTxs,transactionsByAddress)) || updatedTxs
+
+                          let updatedTxs = false
+                          if(!loadedBlocksTop || loadedBlocksTop<this.state.block){
+                            if(!loadedBlocksTop) loadedBlocksTop = Math.max(2,this.state.block-5)
+
+                            if(this.state.block - loadedBlocksTop > MAX_BLOCK_TO_LOOK_BACK){
+                              loadedBlocksTop = this.state.block-MAX_BLOCK_TO_LOOK_BACK
+                            }
+
+                            let paddedLoadedBlocks = parseInt(loadedBlocksTop)+BLOCKS_TO_PARSE_PER_BLOCKTIME
+                            //console.log("choosing the min of ",paddedLoadedBlocks,"and",this.state.block)
+                            let parseBlock=Math.min(paddedLoadedBlocks,this.state.block)
+
+                            //console.log("MIN:",parseBlock)
+                            upperBoundOfSearch = parseBlock
+                            console.log(" +++++++======= Parsing recent blocks ~"+this.state.block)
+                            //first, if we are still back parsing, we need to look at *this* block too
+                            if(upperBoundOfSearch<this.state.block){
+                              for(let b=this.state.block;b>this.state.block-6;b--){
+                                //console.log(" ++ Parsing *CURRENT BLOCK* Block "+b+" for transactions...")
+                                updatedTxs = (await this.parseBlocks(b,recentTxs,transactionsByAddress)) || updatedTxs
+                              }
+                            }
+                            console.log(" +++++++======= Parsing from "+loadedBlocksTop+" to "+upperBoundOfSearch+"....")
+                            while(loadedBlocksTop<parseBlock){
+                              //console.log(" ++ Parsing Block "+parseBlock+" for transactions...")
+                              updatedTxs = (await this.parseBlocks(parseBlock,recentTxs,transactionsByAddress)) || updatedTxs
+                              parseBlock--
                             }
                           }
-                          console.log(" +++++++======= Parsing from "+loadedBlocksTop+" to "+upperBoundOfSearch+"....")
-                          while(loadedBlocksTop<parseBlock){
-                            //console.log(" ++ Parsing Block "+parseBlock+" for transactions...")
-                            updatedTxs = (await this.parseBlocks(parseBlock,recentTxs,transactionsByAddress)) || updatedTxs
-                            parseBlock--
+
+                          if(updatedTxs||!this.state.recentTxs){
+                            this.sortAndSaveTransactions(recentTxs,transactionsByAddress)
                           }
-                        }
 
-                        if(updatedTxs||!this.state.recentTxs){
-                          this.sortAndSaveTransactions(recentTxs,transactionsByAddress)
+                          localStorage.setItem(this.state.account+"loadedBlocksTop",upperBoundOfSearch)
+                          this.setState({parsingTheChain:false,loadedBlocksTop:upperBoundOfSearch})
                         }
-
-                        localStorage.setItem(this.state.account+"loadedBlocksTop",upperBoundOfSearch)
-                        this.setState({parsingTheChain:false,loadedBlocksTop:upperBoundOfSearch})
-                      }
-                      //console.log("~~ DONE PARSING SET ~~")
-                    })
-                  }
-                })
-              }
-            }}
+                        //console.log("~~ DONE PARSING SET ~~")
+                      })
+                    }
+                  })
+                }
+              }}
             />
             <Gas
             network={this.state.network}
