@@ -1883,6 +1883,7 @@ render() {
                         balance={balance}
                         goBack={this.goBack.bind(this)}
                         dollarDisplay={dollarDisplay}
+                        bridgeContract={this.state.bridgeContract}
                       />
                     </Card>
                     <Bottom
@@ -1933,7 +1934,6 @@ render() {
                 return (
                   <div>
                     <div style={{zIndex:1,position:"relative",color:"#dddddd"}}>
-
                       <NavCard title={"Reading QRCode..."} goBack={this.goBack.bind(this)} darkMode={true}/>
                     </div>
                     <Loader loaderImage={LOADERIMAGE}  mainStyle={mainStyle}/>
