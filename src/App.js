@@ -414,6 +414,7 @@ class App extends Component {
     let bridgeContract;
     try{
       daiContract = new mainnetweb3.eth.Contract(require("./contracts/StableCoin.abi.js"),"0x72560b830ced423fbb9ec1ae8d01b41f015a5f21")
+      bridgeContract = new mainnetweb3.eth.Contract(require("./contracts/Bridge.abi.js"), "0xd3Bf77460d06cdEEfa1e82115038C5E07A60f951")
     }catch(e){
       console.log("ERROR LOADING DAI Stablecoin Contract",e)
     }
@@ -424,7 +425,7 @@ class App extends Component {
     }catch(e){
       console.log("ERROR LOADING DAI Stablecoin Contract",e)
     }
-    this.setState({mainnetweb3,ensContract,xdaiweb3,daiContract, pdaiContract})
+    this.setState({mainnetweb3,ensContract,xdaiweb3,daiContract, pdaiContract, bridgeContract})
   }
   componentWillUnmount() {
     clearInterval(interval)
@@ -1817,6 +1818,7 @@ render() {
                         balance={balance}
                         goBack={this.goBack.bind(this)}
                         dollarDisplay={dollarDisplay}
+                        bridgeContract={this.state.bridgeContract}
                       />
                     </Card>
                     <Bottom
@@ -1867,7 +1869,6 @@ render() {
                 return (
                   <div>
                     <div style={{zIndex:1,position:"relative",color:"#dddddd"}}>
-
                       <NavCard title={"Reading QRCode..."} goBack={this.goBack.bind(this)} darkMode={true}/>
                     </div>
                     <Loader loaderImage={LOADERIMAGE}  mainStyle={mainStyle}/>
