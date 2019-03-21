@@ -1450,8 +1450,10 @@ render() {
                         dollarDisplay={dollarDisplay}
                         ERC20TOKEN={ERC20TOKEN}
                       />
-
-                      {moreButtons}
+                      
+                      <Box>
+                        {moreButtons}
+                      </Box>
 
                       <RecentTransactions
                         dollarDisplay={dollarDisplay}
