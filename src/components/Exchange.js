@@ -2065,7 +2065,7 @@ export default class Exchange extends React.Component {
           my={3}
           p={3}
         >
-          <Field label={'To Address'}>
+          <Field label={'To Address'} mb={3}>
             <Input
               type="text"
               placeholder="0x..."
@@ -2077,7 +2077,7 @@ export default class Exchange extends React.Component {
           <div>
             { this.state.daiSendToAddress && this.state.daiSendToAddress.length==42 && <Blockies seed={this.state.daiSendToAddress.toLowerCase()} scale={10} /> }
           </div>
-          <Field label={'Send Amount'}>
+          <Field label={'Send Amount'} mb={3}>
             <Flex>
               <Input
                 type="number"
@@ -2324,7 +2324,7 @@ export default class Exchange extends React.Component {
 
     //console.log("eth price ",this.props.ethBalance,this.props.ethprice)
     return (
-      <div style={{marginTop:30}}>
+      <Box mt={4}>
 
         {tokenDisplay}
 
@@ -2445,7 +2445,7 @@ export default class Exchange extends React.Component {
           {sendEthRow}
           {this.state.extraGasUpDisplay}
 
-      </div>
+      </Box>
     )
   }
 }
