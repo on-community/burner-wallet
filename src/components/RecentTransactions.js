@@ -7,6 +7,7 @@ export default ({view, max, buttonStyle, ERC20TOKEN, vendorName, address, recent
   let txns = []
   let count=0
   if(!max) max=9999
+  console.log("test", recentTxs)
   for(let r in recentTxs){
     let thisValue = parseFloat(recentTxs[r].value)
     if(thisValue>0.0){

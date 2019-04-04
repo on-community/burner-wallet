@@ -386,7 +386,8 @@ class App extends Component {
     intervalLong = setInterval(this.longPoll.bind(this),45000)
     setTimeout(this.longPoll.bind(this),150)
 
-    let mainnetweb3 = new Web3(new Web3.providers.WebsocketProvider(WEB3_PROVIDER));
+    // NOTE: Change this to mainnet again when ready for mainnet launch.
+    let mainnetweb3 = new Web3(new Web3.providers.WebsocketProvider("wss://rinkeby.infura.io/ws/v3/e0ea6e73570246bbb3d4bd042c4b5dac"));
     let ensContract = new mainnetweb3.eth.Contract(require("./contracts/ENS.abi.js"),require("./contracts/ENS.address.js"))
     let daiContract;
     let bridgeContract;
@@ -779,6 +780,9 @@ goBack(){
 async parseBlocks(parseBlock,recentTxs,transactionsByAddress){
   let block = await this.state.web3.eth.getBlock(parseBlock)
   let updatedTxs = false
+  console.log("account", this.state.account)
+
+  console.log("block", block)
   if(block){
     let transactions = block.transactions
 
@@ -786,6 +790,7 @@ async parseBlocks(parseBlock,recentTxs,transactionsByAddress){
     for(let t in transactions){
       //console.log("TX",transactions[t])
       let tx = await this.state.web3.eth.getTransaction(transactions[t])
+      console.log(tx)
       if(tx && tx.to && tx.from ){
         //console.log("EEETRTTTTERTETETET",tx)
         let smallerTx = {
@@ -821,6 +826,7 @@ async parseBlocks(parseBlock,recentTxs,transactionsByAddress){
       }
     }
   }
+  console.log("tx", updatedTxs)
   return updatedTxs
 }
 async decryptInput(input){
@@ -1867,7 +1873,7 @@ render() {
         }}
         //used to pass a private key into Dapparatus
         newPrivateKey={this.state.newPrivateKey}
-        fallbackWeb3Provider={WEB3_PROVIDER}
+        fallbackWeb3Provider={XDAI_PROVIDER}
         onUpdate={async (state) => {
           //console.log("DAPPARATUS UPDATE",state)
           if(ERC20TOKEN){
