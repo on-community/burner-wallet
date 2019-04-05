@@ -778,18 +778,23 @@ goBack(){
   setTimeout(()=>{window.scrollTo(0,0)},60)
 }
 async parseBlocks(parseBlock,recentTxs,transactionsByAddress){
-  let block = await this.state.web3.eth.getBlock(parseBlock)
+  let web3;
+  if (this.state.leapProvider) {
+    web3 = this.state.leapProvider
+  } else {
+    web3 = this.state.web3
+  }
+  let block = await web3.eth.getBlock(parseBlock)
   let updatedTxs = false
-  console.log("account", this.state.account)
 
   console.log("block", block)
   if(block){
     let transactions = block.transactions
 
-    //console.log("transactions",transactions)
+    console.log("transactions",transactions)
     for(let t in transactions){
       //console.log("TX",transactions[t])
-      let tx = await this.state.web3.eth.getTransaction(transactions[t])
+      let tx = await web3.eth.getTransaction(transactions[t])
       console.log(tx)
       if(tx && tx.to && tx.from ){
         //console.log("EEETRTTTTERTETETET",tx)
@@ -797,7 +802,7 @@ async parseBlocks(parseBlock,recentTxs,transactionsByAddress){
           hash:tx.hash,
           to:tx.to.toLowerCase(),
           from:tx.from.toLowerCase(),
-          value:this.state.web3.utils.fromWei(""+tx.value,"ether"),
+          value:web3.utils.fromWei(""+tx.value,"ether"),
           blockNumber:tx.blockNumber
         }
 
@@ -813,7 +818,7 @@ async parseBlocks(parseBlock,recentTxs,transactionsByAddress){
             }
 
             try{
-              smallerTx.data = this.state.web3.utils.hexToUtf8(tx.input)
+              smallerTx.data = web3.utils.hexToUtf8(tx.input)
             }catch(e){}
             //console.log("smallerTx at this point",smallerTx)
             if(!smallerTx.data){
@@ -1995,7 +2000,7 @@ async function tokenSend(to,value,gasLimit,txData,cb){
     data = txData
   }
 
-  console.log("DAPPARATUS TOKEN SENDING WITH GAS LIMIT",setGasLimit)
+  //console.log("DAPPARATUS TOKEN SENDING WITH GAS LIMIT",setGasLimit)
 
   const color = 0;
   let result;
@@ -2038,6 +2043,7 @@ async function tokenSend(to,value,gasLimit,txData,cb){
         }
         return tx.sign(privs);
       } else {
+        console.log("debug123")
         return tx.signWeb3(web3);
       }
     })
