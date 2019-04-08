@@ -17,7 +17,6 @@ import wyrelogo from '../wyre.png';
 import InputRange from 'react-input-range';
 import 'react-input-range/lib/css/index.css';
 
-const BN = Web3.utils.BN
 import {
   Flex,
   Box,
@@ -27,6 +26,8 @@ import {
   Input,
   Field
 } from 'rimble-ui'
+
+const BN = Web3.utils.BN
 
 const GASBOOSTPRICE = 0.25
 
