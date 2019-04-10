@@ -963,10 +963,11 @@ export default class Exchange extends React.Component {
         }
       }else{
         //send funds using metamask (or other injected web3 ... should be checked and on mainnet)
+        const { pTx, web3 } = this.props
         console.log("Depositing to ",toDaiBridgeAccount)
-        let bridgeContract = new this.props.web3.eth.Contract(this.props.bridgeContract._jsonInterface,this.props.bridgeContract._address)
+        let bridgeContract = new web3.eth.Contract(this.props.bridgeContract._jsonInterface,this.props.bridgeContract._address)
         console.log("CURRENT BRIDGE CONTRACT YOU NEED TO GET ABI FROM:",this.props.bridgeContract, this.state.daiAddress)
-        let daiContract = new this.props.web3.eth.Contract(this.props.daiContract._jsonInterface,this.props.daiContract._address)
+        let daiContract = new web3.eth.Contract(this.props.daiContract._jsonInterface,this.props.daiContract._address)
         console.log("CURRENT BRIDGE CONTRACT YOU NEED TO GET ABI FROM:",this.props.bridgeContract, this.state.daiAddress)
         const amountWei =  this.props.web3.utils.toWei(""+amount,"ether")
 
@@ -983,7 +984,7 @@ export default class Exchange extends React.Component {
               loaderBarColor:"#f5eb4a",
               loaderBarStatusText: "Approving token amount for Plasma bridge"
             })
-            const approveReceipt = await this.props.pTx(
+            const approveReceipt = await pTx(
               daiContract.methods.approve(
                 bridgeContract._address,
                 amountWei
@@ -1001,7 +1002,7 @@ export default class Exchange extends React.Component {
           loaderBarStatusText:message,
         })
 
-        const depositReceipt = await this.props.pTx(
+        const depositReceipt = await pTx(
           bridgeContract.methods.deposit(
             this.state.daiAddress,
             amountWei,
