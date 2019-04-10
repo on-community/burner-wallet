@@ -604,11 +604,9 @@ class App extends Component {
 
   }
   longPoll() {
-    const uniswap = "https://uniswap-analytics.appspot.com/api/v1/ticker?exchangeAddress="
-    const daiExchange = "0x09cabec1ead1c0ba254b09efb3ee13841712be14"
-    axios.get(uniswap+daiExchange)
+    axios.get("https://api.coinmarketcap.com/v2/ticker/1027/")
      .then((response)=>{
-       const ethprice = response.data.price
+       let ethprice = response.data.data.quotes.USD.price
        this.setState({ethprice})
      })
   }
@@ -863,21 +861,20 @@ async parseBlocks(parseBlock,recentTxs,transactionsByAddress){
   }
   let block = await web3.eth.getBlock(parseBlock)
   let updatedTxs = false
-
   if(block){
     let transactions = block.transactions
 
     //console.log("transactions",transactions)
     for(let t in transactions){
       //console.log("TX",transactions[t])
-      let tx = await web3.eth.getTransaction(transactions[t])
+      let tx = await this.state.web3.eth.getTransaction(transactions[t])
       if(tx && tx.to && tx.from ){
         //console.log("EEETRTTTTERTETETET",tx)
         let smallerTx = {
           hash:tx.hash,
           to:tx.to.toLowerCase(),
           from:tx.from.toLowerCase(),
-          value:web3.utils.fromWei(""+tx.value,"ether"),
+          value:this.state.web3.utils.fromWei(""+tx.value,"ether"),
           blockNumber:tx.blockNumber
         }
 
@@ -893,7 +890,7 @@ async parseBlocks(parseBlock,recentTxs,transactionsByAddress){
             }
 
             try{
-              smallerTx.data = web3.utils.hexToUtf8(tx.input)
+              smallerTx.data = this.state.web3.utils.hexToUtf8(tx.input)
             }catch(e){}
             //console.log("smallerTx at this point",smallerTx)
             if(!smallerTx.data){
@@ -1993,27 +1990,20 @@ render() {
 
 
 
-        <Dapparatus
-        config={{
-          DEBUG: false,
-          hide: true,
-          requiredNetwork: ['Unknown', 'xDai'],
-          metatxAccountGenerator: false,
-        }}
-        //used to pass a private key into Dapparatus
-        newPrivateKey={this.state.newPrivateKey}
-        fallbackWeb3Provider={XDAI_PROVIDER}
-        onUpdate={async (state) => {
-          //console.log("DAPPARATUS UPDATE",state)
-          if(ERC20TOKEN){
-            delete state.balance
-          }
-          if (state.web3Provider) {
-            state.web3 = new Web3(state.web3Provider)
-            this.setState(state,()=>{
-              //console.log("state set:",this.state)
-              if(this.state.possibleNewPrivateKey){
-                this.dealWithPossibleNewPrivateKey()
+            <Dapparatus
+            config={{
+              DEBUG: false,
+              hide: true,
+              requiredNetwork: ['Unknown', 'xDai'],
+              metatxAccountGenerator: false,
+            }}
+            //used to pass a private key into Dapparatus
+            newPrivateKey={this.state.newPrivateKey}
+            fallbackWeb3Provider={XDAI_PROVIDER}
+            onUpdate={async (state) => {
+              //console.log("DAPPARATUS UPDATE",state)
+              if(ERC20TOKEN){
+                delete state.balance
               }
               if (state.web3Provider) {
                 state.web3 = new Web3(state.web3Provider)
