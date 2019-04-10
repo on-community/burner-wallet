@@ -14,7 +14,7 @@
     "cors": "^2.8.4",
     "crypto": "^1.0.1",
     "dapparatus": "leapdao/dapparatus#0f22514",
-    "buffer": "^5.2.1",
+    "buffer": "5.2.1",
     "cors": "^2.8.4",
     "crypto": "^1.0.1",
     "dotenv": "^6.2.0",
