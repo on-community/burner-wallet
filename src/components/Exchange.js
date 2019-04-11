@@ -44,6 +44,25 @@ import { fromRpcSig } from 'ethereumjs-util';
 import { bi, add, divide, lessThan } from 'jsbi-utils';
 
 
+import {
+  Unspent,
+  Tx,
+  Input,
+  Output,
+  Outpoint,
+  OutpointJSON,
+  Type,
+  LeapTransaction,
+  helpers,
+  Exit,
+} from 'leap-core';
+
+import { bi } from 'jsbi-utils';
+
+import { toBuffer, bufferToHex } from 'ethereumjs-util';
+
+const { periodBlockRange } = helpers;
+
 const BN = Web3.utils.BN
 
 const GASBOOSTPRICE = 0.25
@@ -1547,7 +1566,7 @@ export default class Exchange extends React.Component {
                  this.setState({xdaiToDendaiMode:"deposit"})
                }}>
                   <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
-                    <i className="fas fa-arrow-up"  /> sunDAI to {this.props.ERC20NAME}
+                    <i className="fas fa-arrow-up"  /> pDai to {this.props.ERC20NAME}
                   </Scaler>
                </button>
              </div>
@@ -1557,7 +1576,7 @@ export default class Exchange extends React.Component {
                  this.setState({xdaiToDendaiMode:"withdraw"})
                }}>
                  <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
-                  <i className="fas fa-arrow-down" /> {this.props.ERC20NAME} to sunDAI
+                  <i className="fas fa-arrow-down" /> {this.props.ERC20NAME} to pDai
                  </Scaler>
                </button>
              </div>
