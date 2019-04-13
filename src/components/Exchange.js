@@ -617,7 +617,7 @@ export default class Exchange extends React.Component {
         paramsObject.data = this.props.bridgeContract.methods.deposit(
           this.state.daiAddress,
           amountWei,
-          0
+          1
         ).encodeABI()
         console.log("====================== >>>>>>>>> paramsObject!!!!!!!",paramsObject)
 
@@ -688,7 +688,7 @@ export default class Exchange extends React.Component {
           bridgeContract.methods.deposit(
             this.state.daiAddress,
             amountWei,
-            0
+            1
           ),
           ///TODO LET ME PASS IN A CERTAIN AMOUNT OF GAS INSTEAD OF LEANING BACK ON THE <GAS> COMPONENT!!!!!
           150000,

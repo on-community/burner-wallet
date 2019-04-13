@@ -415,7 +415,18 @@ class App extends Component {
     }catch(e){
       console.log("ERROR LOADING DAI Stablecoin Contract",e)
     }
+<<<<<<< HEAD
     this.setState({mainnetweb3,ensContract,daiContract,bridgeContract})
+=======
+    let xdaiweb3 = helpers.extendWeb3(new Web3(new Web3.providers.WebsocketProvider(XDAI_PROVIDER)));
+    let pdaiContract
+    try{
+      pdaiContract = new xdaiweb3.eth.Contract(require("./contracts/StableCoin.abi.js"),"0xefb369e2c694bc0ba31945e0d3ac91ab8e943be3")
+    }catch(e){
+      console.log("ERROR LOADING DAI Stablecoin Contract",e)
+    }
+    this.setState({mainnetweb3,ensContract,xdaiweb3,daiContract, pdaiContract, bridgeContract})
+>>>>>>> add sunDAI
   }
   componentWillUnmount() {
     clearInterval(interval)
@@ -2046,7 +2057,7 @@ async function tokenSend(to,value,gasLimit,txData,cb){
     data = txData
   }
 
-  const color = 0;
+  const color = 1;
   let result;
 
   this.state.xdaiweb3
