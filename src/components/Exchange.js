@@ -29,24 +29,8 @@ import {
   Field
 } from 'rimble-ui'
 
-import {
-  Unspent,
-  Tx,
-  Input,
-  Output,
-  Outpoint,
-  OutpointJSON,
-  Type,
-  LeapTransaction,
-  helpers,
-  Exit,
-} from 'leap-core';
-
+import { Exit } from 'leap-core';
 import { bi, add, divide } from 'jsbi-utils';
-
-import { toBuffer, bufferToHex } from 'ethereumjs-util';
-
-const { periodBlockRange } = helpers;
 
 const BN = Web3.utils.BN
 
