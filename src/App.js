@@ -12,6 +12,7 @@ import Header from './components/Header';
 import NavCard from './components/NavCard';
 import SendByScan from './components/SendByScan';
 import SendToAddress from './components/SendToAddress';
+import RegisterMovie from './components/RegisterMovie';
 import SendBadge from './components/SendBadge';
 import WithdrawFromPrivate from './components/WithdrawFromPrivate';
 import RequestFunds from './components/RequestFunds';
@@ -318,10 +319,11 @@ class App extends Component {
     })
   }
   openScanner(returnState){
-    this.setState({returnState:returnState,view:"send_by_scan"})
+    this.setState({returnState:returnState, scannerOpen: true})
   }
   returnToState(scannerState){
-    let updateState = Object.assign({scannerState:scannerState}, this.state.returnState);
+    let updateState = Object.assign({scannerState}, this.state.returnState);
+    updateState.scannerOpen = false
     updateState.returnState = false
     console.log("UPDATE FROM RETURN STATE",updateState)
     this.setState(updateState)
@@ -781,13 +783,13 @@ class App extends Component {
     message: 'Insufficient funds',
   });
   return;
-}
-}
-*/
-this.changeAlert(null);
-console.log("Setting state",view)
-this.setState({ view, scannerState:false },cb);
-};
+  }
+  }
+  */
+  this.changeAlert(null);
+  console.log("Setting state",view)
+  this.setState({ view, scannerState:false },cb);
+  };
 changeAlert = (alert, hide=true) => {
   clearTimeout(this.alertTimeout);
   this.setState({ alert });
@@ -797,9 +799,10 @@ changeAlert = (alert, hide=true) => {
     }, 2000);
   }
 };
-goBack(){
+goBack(view="main"){
   console.log("GO BACK")
-  this.changeView('main')
+  this.changeView(view)
+  this.setState({scannerOpen: false })
   setTimeout(()=>{window.scrollTo(0,0)},60)
 }
 async parseBlocks(parseBlock,recentTxs,transactionsByAddress){
@@ -1360,10 +1363,25 @@ render() {
             )
           }
 
+          const sendByScan = (
+            <SendByScan
+              parseAndCleanPath={this.parseAndCleanPath.bind(this)}
+              returnToState={this.returnToState.bind(this)}
+              returnState={this.state.returnState}
+              mainStyle={mainStyle}
+              goBack={this.goBack.bind(this)}
+              changeView={this.changeView}
+              onError={(error) =>{
+                this.changeAlert("danger",error)
+              }}
+            />
+          )
+
           switch(view) {
             case 'main':
             return (
               <div>
+                {this.state.scannerOpen ? sendByScan : null}
                 <div className="main-card card w-100" style={{zIndex:1}}>
 
 
@@ -1412,6 +1430,7 @@ render() {
             case 'advanced':
             return (
               <div>
+                {this.state.scannerOpen ? sendByScan : null}
                 <div className="main-card card w-100" style={{zIndex:1}}>
 
                   <NavCard title={i18n.t('advance_title')} goBack={this.goBack.bind(this)}/>
@@ -1434,25 +1453,12 @@ render() {
                 />
               </div>
             )
-            case 'send_by_scan':
-            return (
-              <SendByScan
-                parseAndCleanPath={this.parseAndCleanPath.bind(this)}
-                returnToState={this.returnToState.bind(this)}
-                returnState={this.state.returnState}
-                mainStyle={mainStyle}
-                goBack={this.goBack.bind(this)}
-                changeView={this.changeView}
-                onError={(error) =>{
-                  this.changeAlert("danger",error)
-                }}
-              />
-            );
             case 'withdraw_from_private':
 
 
               return (
                 <div>
+                  {this.state.scannerOpen ? sendByScan : null}
                   <div className="send-to-address card w-100" style={{zIndex:1}}>
                     <NavCard title={i18n.t('withdraw')} goBack={this.goBack.bind(this)}/>
                     {defaultBalanceDisplay}
@@ -1482,6 +1488,7 @@ render() {
             case 'send_badge':
             return (
               <div>
+                {this.state.scannerOpen ? sendByScan : null}
                 <div className="send-to-address card w-100" style={{zIndex:1}}>
                   <NavCard title={this.state.badges[this.state.selectedBadge].name} titleLink={this.state.badges[this.state.selectedBadge].external_url} goBack={this.goBack.bind(this)}/>
                   <SendBadge
@@ -1513,6 +1520,7 @@ render() {
             case 'send_to_address':
             return (
               <div>
+                {this.state.scannerOpen ? sendByScan : null}
                 <div className="send-to-address card w-100" style={{zIndex:1}}>
                   <NavCard title={i18n.t('send_to_address_title')} goBack={this.goBack.bind(this)}/>
                   {defaultBalanceDisplay}
@@ -1545,6 +1553,7 @@ render() {
             case 'receipt':
             return (
               <div>
+                {this.state.scannerOpen ? sendByScan : null}
                 <div className="main-card card w-100" style={{zIndex:1}}>
 
                   <NavCard title={i18n.t('receipt_title')} goBack={this.goBack.bind(this)}/>
@@ -1577,6 +1586,7 @@ render() {
             case 'receive':
             return (
               <div>
+                {this.state.scannerOpen ? sendByScan : null}
                 <div className="main-card card w-100" style={{zIndex:1}}>
 
                   <NavCard title={i18n.t('receive_title')} goBack={this.goBack.bind(this)}/>
@@ -1610,6 +1620,7 @@ render() {
             case 'request_funds':
             return (
               <div>
+                {this.state.scannerOpen ? sendByScan : null}
                 <div className="main-card card w-100" style={{zIndex:1}}>
 
                   <NavCard title={i18n.t('request_funds_title')} goBack={this.goBack.bind(this)}/>
@@ -1646,6 +1657,7 @@ render() {
 
               return (
                 <div>
+                  {this.state.scannerOpen ? sendByScan : null}
                   <div className="main-card card w-100" style={{zIndex:1}}>
 
                     <NavCard title={url} goBack={this.goBack.bind(this)} />
@@ -1669,6 +1681,7 @@ render() {
             case 'share-link':
               return (
                 <div>
+                  {this.state.scannerOpen ? sendByScan : null}
                   <div className="main-card card w-100" style={{zIndex:1}}>
 
                     <NavCard title={'Share Link'} goBack={this.goBack.bind(this)} />
@@ -1689,6 +1702,7 @@ render() {
             case 'send_with_link':
             return (
               <div>
+                {this.state.scannerOpen ? sendByScan : null}
                 <div className="main-card card w-100" style={{zIndex:1}}>
 
                   <NavCard title={'Send with Link'} goBack={this.goBack.bind(this)} />
@@ -1744,6 +1758,7 @@ render() {
             case 'burn-wallet':
             return (
               <div>
+                {this.state.scannerOpen ? sendByScan : null}
                 <div className="main-card card w-100" style={{zIndex:1}}>
 
                   <NavCard title={"Burn Private Key"} goBack={this.goBack.bind(this)}/>
@@ -1778,6 +1793,7 @@ render() {
             case 'cash_out':
             return (
               <div>
+                {this.state.scannerOpen ? sendByScan : null}
                 <div className="main-card card w-100" style={{zIndex:1}}>
 
                   <NavCard title={"Cash Out"} goBack={this.goBack.bind(this)}/>
@@ -1800,6 +1816,7 @@ render() {
             case 'exchange':
             return (
               <div>
+                {this.state.scannerOpen ? sendByScan : null}
                 <div className="main-card card w-100" style={{zIndex:1}}>
 
                   <NavCard title={i18n.t('exchange_title')} goBack={this.goBack.bind(this)}/>
@@ -1846,6 +1863,7 @@ render() {
             case 'vendors':
             return (
               <div>
+                {this.state.scannerOpen ? sendByScan : null}
                 <div className="main-card card w-100" style={{zIndex:1}}>
 
                   <NavCard title={i18n.t('vendors')} goBack={this.goBack.bind(this)}/>
@@ -1899,6 +1917,33 @@ render() {
                   <NavCard title={"Claiming..."} goBack={this.goBack.bind(this)} darkMode={true}/>
                 </div>
               <Loader loaderImage={LOADERIMAGE} mainStyle={mainStyle}/>
+              </div>
+            );
+            case 'mint':
+            return (
+              <div>
+                {this.state.scannerOpen ? sendByScan : null}
+                <div className="send-to-address card w-100" style={{zIndex:1}}>
+                  <NavCard title={i18n.t('mint.title')} goBack={this.goBack.bind(this)}/>
+                  <RegisterMovie
+                    mainnetweb3={this.state.mainnetweb3}
+                    ERC721Full={this.state.contracts.ERC721Full}
+                    openScanner={this.openScanner.bind(this)}
+                    scannerState={this.state.scannerState}
+                    buttonStyle={buttonStyle}
+                    web3={this.state.web3}
+                    address={account}
+                    goBack={this.goBack.bind(this)}
+                    changeView={this.changeView}
+                    changeAlert={this.changeAlert}
+                    pTx={this.state.pTx}
+                    setReceipt={this.setReceipt}
+                  />
+                </div>
+                <Bottom
+                  text={i18n.t('cancel')}
+                  action={this.goBack.bind(this)}
+                />
               </div>
             );
             default:
