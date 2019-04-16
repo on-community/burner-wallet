@@ -444,8 +444,16 @@ class App extends Component {
             //console.log("BADGE",b,thisBadgeId,thisBadgeData)
             if(!this.state.badges[thisBadgeId]){
               console.log("Getting badge data ",thisBadgeData)
-              // TODO: Handle potential errors
-              const data = (await axios.get(thisBadgeData)).data
+              let data
+              try {
+                data = (await axios.get(thisBadgeData)).data
+              } catch(err) {
+                this.changeAlert({
+                  type: 'warning',
+                  message: "Couldn't load ERC721 data.",
+                });
+                console.log(err) 
+              }
               if (data) {
                   this.state.badges[thisBadgeId] = data
                   this.state.badges[thisBadgeId].id = thisBadgeId
