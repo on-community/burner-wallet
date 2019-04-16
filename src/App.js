@@ -430,30 +430,35 @@ class App extends Component {
     window.removeEventListener("resize", this.updateDimensions.bind(this));
   }
   async poll() {
-
     let badgeBalance = 0
-    if(this.state.contracts&&(this.state.network=="xDai"||this.state.network=="Unknown") && this.state.contracts.Badges){
-      //check for badges for this user
-      badgeBalance = await this.state.contracts.Badges.balanceOf(this.state.account).call()
+    if(this.state.contracts && this.state.contracts.ERC721Full){
+      //check for NFTs for this user
+      badgeBalance = await this.state.contracts.ERC721Full.balanceOf(this.state.account).call()
       if(badgeBalance>0){
         let update = false
         for(let b = 0;b<badgeBalance;b++){
-          let thisBadgeId = await this.state.contracts.Badges.tokenOfOwnerByIndex(this.state.account,b).call()
+          let thisBadgeId = await this.state.contracts.ERC721Full.tokenOfOwnerByIndex(this.state.account,b).call()
           if(!this.state.badges[thisBadgeId]){
 
-            let thisBadgeData = await this.state.contracts.Badges.tokenURI(thisBadgeId).call()
+            let thisBadgeData = await this.state.contracts.ERC721Full.tokenURI(thisBadgeId).call()
             //console.log("BADGE",b,thisBadgeId,thisBadgeData)
             if(!this.state.badges[thisBadgeId]){
               console.log("Getting badge data ",thisBadgeData)
-              let response = axios.get(thisBadgeData).then((response)=>{
-                console.log("RESPONSE:",response)
-                if(response && response.data){
-                  this.state.badges[thisBadgeId] = response.data
+              let data
+              try {
+                data = (await axios.get(thisBadgeData)).data
+              } catch(err) {
+                this.changeAlert({
+                  type: 'warning',
+                  message: "Couldn't load ERC721 data.",
+                });
+                console.log(err) 
+              }
+              if (data) {
+                  this.state.badges[thisBadgeId] = data
                   this.state.badges[thisBadgeId].id = thisBadgeId
                   update=true
-                }
-              })
-
+              }
             }
           }
         }
