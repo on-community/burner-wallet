@@ -145,6 +145,7 @@ export default class Exchange extends React.Component {
       wyreWidgetOpen: false,
     }
 
+    this.updatePendingExits(daiAddress, xdaiweb3);
     setInterval(() => this.updatePendingExits(daiAddress, xdaiweb3), 5000);
   }
 
@@ -1509,6 +1510,7 @@ export default class Exchange extends React.Component {
                         )
                       ).then(rsp => {
                         console.log(rsp);
+                        this.updatePendingExits(this.state.daiAddress, this.state.xdaiweb3);
                         this.setState({ amount: "", daiToXdaiMode: false });
                       }).catch(err => {
                         console.log(err);
