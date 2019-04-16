@@ -41,10 +41,6 @@ import {
 
 import { bi, add, divide } from 'jsbi-utils';
 
-import { toBuffer, bufferToHex } from 'ethereumjs-util';
-
-const { periodBlockRange } = helpers;
-
 const BN = Web3.utils.BN
 
 const GASBOOSTPRICE = 0.25
@@ -1493,10 +1489,6 @@ export default class Exchange extends React.Component {
                       }
                     })
                   }else{
-                    let inputTx;
-                    let tx;
-                    let setup;
-                    let color;
                     // TODO: get real decimals
                     const amount = bi(this.state.amount * 10 ** 18);
                     const tokenAddr = this.props.daiContract._address;
