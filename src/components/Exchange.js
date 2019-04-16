@@ -23,7 +23,7 @@ import {
   Button,
   OutlineButton,
   Icon,
-  Input,
+  Input as RInput,
   Field
 } from 'rimble-ui'
 import {
@@ -38,6 +38,8 @@ import {
   helpers,
   Exit,
 } from 'leap-core';
+
+import { fromRpcSig } from 'ethereumjs-util';
 
 import { bi, add, divide } from 'jsbi-utils';
 
@@ -1439,37 +1441,38 @@ export default class Exchange extends React.Component {
                 if(this.state.xdaiMetaAccount){
                   //send funds using metaaccount on xdai
 
-                  let paramsObject = {
-                    from: this.state.daiAddress,
-                    to: toDaiBridgeAccount,
-                    value: this.state.xdaiweb3.utils.toWei(""+this.state.amount,'ether'),
-                    gas: 120000,
-                    gasPrice: Math.round(1.1 * 1000000000)
-                  }
-                  console.log("====================== >>>>>>>>> paramsObject!!!!!!!",paramsObject)
-                  console.log("TTTTTTTTTTTTTTTTTTTTTX",paramsObject)
+                  const signer = {
+                    signTx: (tx) => {
+                      const privKeys = tx.inputs.map(_ => this.state.xdaiMetaAccount.privateKey);
+                      return tx.sign(privKeys);
+                    },
+                    signMessage: (msg) => {
+                      const { signature } = this.state.xdaiweb3.eth.accounts.sign(msg, this.state.xdaiMetaAccount.privateKey);
+                      const { r, s, v } = fromRpcSig(signature);
+                      return { r, s, v, signer: this.state.daiAddress };
+                    }
+                  };
 
-                  this.state.xdaiweb3.eth.accounts.signTransaction(paramsObject, this.state.xdaiMetaAccount.privateKey).then(signed => {
-                    console.log("========= >>> SIGNED",signed)
-                      this.state.xdaiweb3.eth.sendSignedTransaction(signed.rawTransaction).on('receipt', (receipt)=>{
-                        console.log("META RECEIPT",receipt)
-                        if(receipt&&receipt.transactionHash&&!metaReceiptTracker[receipt.transactionHash]){
-                          metaReceiptTracker[receipt.transactionHash] = true
-                          this.setState({
-                            amount:"",
-                            loaderBarColor:"#4ab3f5",
-                            loaderBarStatusText:"Waiting for bridge...",
-                            loaderBarClick:()=>{
-                              alert(i18n.t('exchange.idk'))
-                            }
-                          })
-                        }
-                      }).on('error', (err)=>{
-                        console.log("EEEERRRRRRRROOOOORRRRR ======== >>>>>",err)
-                        this.props.changeAlert({type: 'danger',message: err.toString()});
-                      }).then(console.log)
-                  });
-
+                  // TODO: get real decimals
+                  const amount = bi(this.state.amount * 10 ** 18);
+                  const tokenAddr = this.props.daiContract._address;
+                  console.log('MetA!!!', signer);
+                  this.state.xdaiweb3.getColor(tokenAddr)
+                    .then(color =>
+                      Exit.fastSellAmount(
+                        this.state.daiAddress, amount, color,
+                        this.state.xdaiweb3, this.props.web3,
+                        'https://2nuxsb25he.execute-api.eu-west-1.amazonaws.com/testnet/sellExit',
+                        signer,
+                      )
+                    ).then(rsp => {
+                      console.log(rsp);
+                      this.updatePendingExits(this.state.daiAddress, this.state.xdaiweb3);
+                      this.setState({ amount: "", daiToXdaiMode: false });
+                    }).catch(err => {
+                      console.log(err);
+                    });
+                  
                 }else{
 
                   //BECAUSE THIS COULD BE ON A TOKEN, THE SEND FUNCTION IS SENDING TOKENS TO THE BRIDGE HAHAHAHA LETs FIX THAT
@@ -2099,7 +2102,7 @@ export default class Exchange extends React.Component {
           p={3}
         >
           <Field label={'To Address'} mb={3}>
-            <Input
+            <RInput
               type="text"
               placeholder="0x..."
               value={this.state.daiSendToAddress}
@@ -2112,7 +2115,7 @@ export default class Exchange extends React.Component {
           </div>
           <Field label={'Send Amount'} mb={3}>
             <Flex>
-              <Input
+              <RInput
                 type="number"
                 step="0.1"
                 placeholder="$0.00"
@@ -2217,7 +2220,7 @@ export default class Exchange extends React.Component {
           p={3}
         >
           <Field label={'To Address'} mb={3}>
-            <Input
+            <RInput
               type="text"
               placeholder="0x..."
               value={this.state.ethSendToAddress}
@@ -2230,7 +2233,7 @@ export default class Exchange extends React.Component {
           </div>
           <Field label={'Send Amount'} mb={3}>
             <Flex>
-              <Input
+              <RInput
                 type="number"
                 step="0.1"
                 placeholder="$0.00"
@@ -2326,7 +2329,7 @@ export default class Exchange extends React.Component {
           p={3}
         >
           <Field label={'To Address'} mb={3}>
-            <Input
+            <RInput
               type="text"
               className="form-control"
               placeholder="0x..."
@@ -2339,7 +2342,7 @@ export default class Exchange extends React.Component {
           </div>
           <Field label={'Send Amount'} mb={3}>
             <Flex>
-              <Input
+              <RInput
                 type="number"
                 step="0.1"
                 className="form-control"
