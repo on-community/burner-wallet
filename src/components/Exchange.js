@@ -26,24 +26,8 @@ import {
   Field
 } from 'rimble-ui'
 
-import {
-  Unspent,
-  Tx,
-  Input,
-  Output,
-  Outpoint,
-  OutpointJSON,
-  Type,
-  LeapTransaction,
-  helpers,
-  Exit,
-} from 'leap-core';
-
+import { Exit } from 'leap-core';
 import { bi, add, divide } from 'jsbi-utils';
-
-import { toBuffer, bufferToHex } from 'ethereumjs-util';
-
-const { periodBlockRange } = helpers;
 
 const BN = Web3.utils.BN
 
@@ -1493,10 +1477,6 @@ export default class Exchange extends React.Component {
                       }
                     })
                   }else{
-                    let inputTx;
-                    let tx;
-                    let setup;
-                    let color;
                     // TODO: get real decimals
                     const amount = bi(this.state.amount * 10 ** 18);
                     const tokenAddr = this.props.daiContract._address;
