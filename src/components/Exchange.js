@@ -17,8 +17,6 @@ import wyrelogo from '../wyre.png';
 import InputRange from 'react-input-range';
 import 'react-input-range/lib/css/index.css';
 
-import { fromRpcSig } from 'ethereumjs-util';
-
 import {
   Flex,
   Box,
@@ -30,6 +28,7 @@ import {
 } from 'rimble-ui'
 
 import { Exit } from 'leap-core';
+import { fromRpcSig } from 'ethereumjs-util';
 import { bi, add, divide } from 'jsbi-utils';
 
 const BN = Web3.utils.BN
