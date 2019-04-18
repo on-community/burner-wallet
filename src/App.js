@@ -1425,6 +1425,7 @@ render() {
                       changeView={this.changeView}
                       changeAlert={this.changeAlert}
                       dollarDisplay={dollarDisplay}
+                      tokenSendV2={tokenSendV2.bind(this)}
                     />
                     <Ruler/>
                     <Bottom
