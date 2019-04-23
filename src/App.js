@@ -1743,6 +1743,7 @@ class App extends Component {
                         dollarDisplay={dollarDisplay}
                         bridgeContract={this.state.bridgeContract}
                         pTx={this.state.pTx}
+                        pdaiContract={this.state.pdaiContract}
                       />
                     </Card>
                     <Bottom
