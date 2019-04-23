@@ -146,6 +146,7 @@ else if (window.location.hostname.indexOf("burner.leapdao.org") >= 0) {
 else if (window.location.hostname.indexOf("sundai.io") >= 0) {
   XDAI_PROVIDER = "wss://mainnet-node1.leapdao.org:1443";
   WEB3_PROVIDER = "wss://mainnet.infura.io/ws/v3/f039330d8fb747e48a7ce98f51400d65";
+<<<<<<< HEAD
   leapNetwork = "Leap Network";
 
   // mainnet sunDAI for Plasma DAI
@@ -166,6 +167,8 @@ else if (window.location.hostname.indexOf("sundai.local") >= 0) {
   DAI_TOKEN_ADDR = '0xD2D0F8a6ADfF16C2098101087f9548465EC96C98';
   P_DAI_TOKEN_ADDR = '0xeFb369E2c694Bc0ba31945e0D3ac91Ab8E943be3';
   
+=======
+>>>>>>> update contract addresses
   CLAIM_RELAY = false;
   ERC20NAME = false;
   ERC20TOKEN = false;
@@ -443,12 +446,21 @@ class App extends Component {
     intervalLong = setInterval(this.longPoll.bind(this),45000)
     setTimeout(this.longPoll.bind(this),150)
 
+<<<<<<< HEAD
     let mainnetweb3 = new Web3(WEB3_PROVIDER);
+=======
+    // NOTE: Change this to mainnet again when ready for mainnet launch.
+    let mainnetweb3 = new Web3(new Web3.providers.WebsocketProvider(WEB3_PROVIDER));
+>>>>>>> update contract addresses
     let ensContract = new mainnetweb3.eth.Contract(require("./contracts/ENS.abi.js"),require("./contracts/ENS.address.js"))
     let daiContract;
     let bridgeContract;
     try{
+<<<<<<< HEAD
       daiContract = new mainnetweb3.eth.Contract(require("./contracts/StableCoin.abi.js"),DAI_TOKEN_ADDR)
+=======
+      daiContract = new mainnetweb3.eth.Contract(require("./contracts/StableCoin.abi.js"),"0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359")
+>>>>>>> update contract addresses
       bridgeContract = new mainnetweb3.eth.Contract(require("./contracts/Bridge.abi.js"), require("./contracts/Bridge.address.js"))
     }catch(e){
       console.log("ERROR LOADING DAI Stablecoin Contract",e)
@@ -1960,6 +1972,7 @@ render() {
         { alert && <Footer alert={alert} changeAlert={this.changeAlert}/> }
         </div>
         <Dapparatus
+<<<<<<< HEAD
             config={{
               DEBUG: false,
               hide: true,
@@ -1975,6 +1988,40 @@ render() {
               //console.log("DAPPARATUS UPDATE",state)
               if(ERC20TOKEN){
                 delete state.balance
+=======
+        config={{
+          DEBUG: false,
+          hide: true,
+          requiredNetwork: ['Unknown', 'xDai'],
+          metatxAccountGenerator: false,
+        }}
+        //used to pass a private key into Dapparatus
+        newPrivateKey={this.state.newPrivateKey}
+        fallbackWeb3Provider={WEB3_PROVIDER}
+        network="LeapTestnet"
+        xdaiProvider={XDAI_PROVIDER}
+        onUpdate={async (state) => {
+          //console.log("DAPPARATUS UPDATE",state)
+          if(ERC20TOKEN){
+            delete state.balance
+          }
+          if (state.xdaiweb3) {
+            let pdaiContract;
+            try{
+              pdaiContract = new state.xdaiweb3.eth.Contract(require("./contracts/StableCoin.abi.js"),"0x3cC0DF021dD36eb378976142Dc1dE3F5726bFc48")
+            }catch(e){
+              console.log("ERROR LOADING DAI Stablecoin Contract",e)
+            }
+
+            this.setState({pdaiContract});
+          }
+          if (state.web3Provider) {
+            state.web3 = new Web3(state.web3Provider)
+            this.setState(state,()=>{
+              //console.log("state set:",this.state)
+              if(this.state.possibleNewPrivateKey){
+                this.dealWithPossibleNewPrivateKey()
+>>>>>>> update contract addresses
               }
               if (state.xdaiweb3) {
                 let pdaiContract;
@@ -2100,9 +2147,15 @@ async function tokenSend(to, value, gasLimit, txData, cb) {
 
   let receipt;
   if (metaAccount) {
+<<<<<<< HEAD
     receipt = await tokenSendV2(account, to, value, color, xdaiweb3, web3, metaAccount.privateKey)
   } else {
     receipt = await tokenSendV2(account, to, value, color, xdaiweb3, web3, null)
+=======
+    receipt = await tokenSendV2(account, to, value, 2, xdaiweb3, web3, metaAccount.privateKey)
+  } else {
+    receipt = await tokenSendV2(account, to, value, 2, xdaiweb3, web3, null)
+>>>>>>> update contract addresses
   }
   // NOTE: The callback cb is not used correctly in the format 
   // cb(error, receipt) throughout the app. We hence cannot send errors in
