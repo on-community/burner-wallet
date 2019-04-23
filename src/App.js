@@ -1350,7 +1350,7 @@ render() {
 
           let defaultBalanceDisplay = (
             <div>
-              <Balance icon={xdai} selected={false} text={"xdai"} amount={this.state.xdaiBalance} address={account} dollarDisplay={dollarDisplay} />
+              <Balance icon={xdai} selected={false} text={"sunDai"} amount={this.state.xdaiBalance} address={account} dollarDisplay={dollarDisplay} />
               <Ruler/>
             </div>
           )

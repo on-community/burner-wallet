@@ -1207,7 +1207,7 @@ export default class Exchange extends React.Component {
                  this.setState({xdaiToDendaiMode:"deposit"})
                }}>
                   <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
-                    <i className="fas fa-arrow-up"  /> pDai to {this.props.ERC20NAME}
+                    <i className="fas fa-arrow-up"  /> sunDai to {this.props.ERC20NAME}
                   </Scaler>
                </button>
              </div>
@@ -1217,7 +1217,7 @@ export default class Exchange extends React.Component {
                  this.setState({xdaiToDendaiMode:"withdraw"})
                }}>
                  <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
-                  <i className="fas fa-arrow-down" /> {this.props.ERC20NAME} to pDai
+                  <i className="fas fa-arrow-down" /> {this.props.ERC20NAME} to sunDai
                  </Scaler>
                </button>
              </div>
@@ -1521,7 +1521,7 @@ export default class Exchange extends React.Component {
               this.setState({daiToXdaiMode:"deposit"})
             }} >
               <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
-              <i className="fas fa-arrow-up"  /> DAI to xDai
+              <i className="fas fa-arrow-up"  /> DAI to sunDai
               </Scaler>
             </button>
           </div>
@@ -1531,7 +1531,7 @@ export default class Exchange extends React.Component {
               this.setState({daiToXdaiMode:"withdraw"})
             }} >
               <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
-              <i className="fas fa-arrow-down"  /> pDai to DAI
+              <i className="fas fa-arrow-down"  /> sunDai to DAI
               </Scaler>
             </button>
           </div>
@@ -2350,7 +2350,7 @@ export default class Exchange extends React.Component {
               <img style={logoStyle} src={this.props.xdai} />
             </div>
             <div className="col-3 p-1" style={{marginTop:8}}>
-              xDai
+              sunDai
             </div>
             <div className="col-4 p-1" style={{marginTop:8,whiteSpace:"nowrap"}}>
                 <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
