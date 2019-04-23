@@ -146,7 +146,7 @@ else if (window.location.hostname.indexOf("burner.leapdao.org") >= 0) {
 else if (window.location.hostname.indexOf("sundai.io") >= 0) {
   XDAI_PROVIDER = "wss://mainnet-node1.leapdao.org:1443";
   WEB3_PROVIDER = "wss://mainnet.infura.io/ws/v3/f039330d8fb747e48a7ce98f51400d65";
-  leapNetwork = "Leap Mainnet";
+  leapNetwork = "Leap Network";
 
   // mainnet sunDAI for Plasma DAI
   P_DAI_TOKEN_ADDR = '0x3cC0DF021dD36eb378976142Dc1dE3F5726bFc48';
