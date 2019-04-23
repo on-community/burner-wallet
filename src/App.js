@@ -1415,6 +1415,7 @@ class App extends Component {
                         dollarDisplay={dollarDisplay}
                         tokenSendV2={tokenSendV2.bind(this)}
                         convertToDollar={convertToDollar}
+                        pDaiTokenAddr={P_DAI_TOKEN_ADDR}
                       />
                       <Ruler/>
                     </div>
