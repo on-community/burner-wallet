@@ -70,7 +70,7 @@ export default class Exchange extends React.Component {
     let daiAddress = false
     let xdaiAddress = false
     if(pk&&pk!="0"){
-      mainnetMetaAccount =  mainnetweb3.eth.accounts.privateKeyToAccount(pk)
+      mainnetMetaAccount = mainnetweb3.eth.accounts.privateKeyToAccount(pk)
       daiAddress = mainnetMetaAccount.address.toLowerCase();
       xdaiMetaAccount = xdaiweb3.eth.accounts.privateKeyToAccount(pk)
       xdaiAddress = xdaiMetaAccount.address.toLowerCase();
@@ -127,7 +127,7 @@ export default class Exchange extends React.Component {
   updatePendingExits(daiAddress, xdaiweb3) {
     const account = daiAddress;
     const tokenAddr = this.props.daiContract._address;
-                    
+
     xdaiweb3.getColor(tokenAddr)
     .then(color => {
       return fetch(
@@ -146,7 +146,7 @@ export default class Exchange extends React.Component {
       }
       const pendingValue = rsp.reduce((sum, v) => add(sum, bi(v.value)), bi(0));
       const pendingTokens = parseInt(String(divide(pendingValue, bi(10 ** 16)))) / 100;
-      const pendingMsg = "Pending exits of " + pendingTokens.toString() + " pDAI";
+      const pendingMsg = "Pending exits of " + pendingTokens.toString() + " sunDAI";
       this.setState({
         pendingMsg
       });
@@ -551,6 +551,8 @@ export default class Exchange extends React.Component {
       response.data.average=response.data.average + (response.data.average*GASBOOSTPRICE)
       let gwei = Math.round(response.data.average*100)/1000
 
+      const color = await this.state.xdaiweb3.getColor(this.props.pdaiContract._address);
+
       if(this.state.mainnetMetaAccount){
         //send funds using metaaccount on mainnet
         const amountWei = this.state.mainnetweb3.utils.toWei(""+amount,"ether")
@@ -617,7 +619,7 @@ export default class Exchange extends React.Component {
         paramsObject.data = this.props.bridgeContract.methods.deposit(
           this.state.daiAddress,
           amountWei,
-          2
+          color,
         ).encodeABI()
         console.log("====================== >>>>>>>>> paramsObject!!!!!!!",paramsObject)
 
@@ -688,7 +690,7 @@ export default class Exchange extends React.Component {
           bridgeContract.methods.deposit(
             this.state.daiAddress,
             amountWei,
-            2
+            color,
           ),
           ///TODO LET ME PASS IN A CERTAIN AMOUNT OF GAS INSTEAD OF LEANING BACK ON THE <GAS> COMPONENT!!!!!
           150000,
@@ -1205,7 +1207,7 @@ export default class Exchange extends React.Component {
                  this.setState({xdaiToDendaiMode:"deposit"})
                }}>
                   <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
-                    <i className="fas fa-arrow-up"  /> pDai to {this.props.ERC20NAME}
+                    <i className="fas fa-arrow-up"  /> sunDAI to {this.props.ERC20NAME}
                   </Scaler>
                </button>
              </div>
@@ -1215,7 +1217,7 @@ export default class Exchange extends React.Component {
                  this.setState({xdaiToDendaiMode:"withdraw"})
                }}>
                  <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
-                  <i className="fas fa-arrow-down" /> {this.props.ERC20NAME} to pDai
+                  <i className="fas fa-arrow-down" /> {this.props.ERC20NAME} to sunDAI
                  </Scaler>
                </button>
              </div>
@@ -1288,7 +1290,7 @@ export default class Exchange extends React.Component {
       //       </div>
       //     </div>
       //   )
-      //}else 
+      //}else
       if(this.props.ethBalance<=0){
         daiToXdaiDisplay = (
           <div className="content ops row" style={{textAlign:'center'}}>
@@ -1460,7 +1462,7 @@ export default class Exchange extends React.Component {
                     }).catch(err => {
                       console.log(err);
                     });
-                  
+
                 }else{
 
                   //BECAUSE THIS COULD BE ON A TOKEN, THE SEND FUNCTION IS SENDING TOKENS TO THE BRIDGE HAHAHAHA LETs FIX THAT
@@ -1483,7 +1485,7 @@ export default class Exchange extends React.Component {
                     // TODO: get real decimals
                     const amount = bi(this.state.amount * 10 ** 18);
                     const tokenAddr = this.props.daiContract._address;
-                    
+
                     this.state.xdaiweb3.getColor(tokenAddr)
                       .then(color =>
                         Exit.fastSellAmount(
@@ -1519,7 +1521,7 @@ export default class Exchange extends React.Component {
               this.setState({daiToXdaiMode:"deposit"})
             }} >
               <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
-              <i className="fas fa-arrow-up"  /> DAI to xDai
+              <i className="fas fa-arrow-up"  /> DAI to sunDAI
               </Scaler>
             </button>
           </div>
@@ -1529,7 +1531,7 @@ export default class Exchange extends React.Component {
               this.setState({daiToXdaiMode:"withdraw"})
             }} >
               <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
-              <i className="fas fa-arrow-down"  /> pDai to DAI
+              <i className="fas fa-arrow-down"  /> sunDAI to DAI
               </Scaler>
             </button>
           </div>
@@ -1553,18 +1555,19 @@ export default class Exchange extends React.Component {
       )
 
     }else if(ethToDaiMode=="deposit"){
-      if(!this.state.mainnetMetaAccount && this.props.network!="Mainnet"){
+
+      if(this.props.ethBalance<=0){
         ethToDaiDisplay = (
           <div className="content ops row" style={{textAlign:'center'}}>
             <div className="col-12 p-1">
-              Error: MetaMask network must be: <span style={{fontWeight:"bold",marginLeft:5}}>Mainnet</span>
+              Error: You don't have any ether
               <a href="#" onClick={()=>{this.setState({ethToDaiMode:false})}} style={{marginLeft:40,color:"#666666"}}>
                 <i className="fas fa-times"/> dismiss
               </a>
             </div>
           </div>
-        )
-      }else{
+        );
+      }else {
         ethToDaiDisplay = (
           <div className="content ops row">
 
@@ -2348,7 +2351,7 @@ export default class Exchange extends React.Component {
               <img style={logoStyle} src={this.props.xdai} />
             </div>
             <div className="col-3 p-1" style={{marginTop:8}}>
-              xDai
+              sunDAI
             </div>
             <div className="col-4 p-1" style={{marginTop:8,whiteSpace:"nowrap"}}>
                 <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>

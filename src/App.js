@@ -71,6 +71,12 @@ let LOADERIMAGE = burnerlogo
 let HARDCODEVIEW// = "loader"// = "receipt"
 let FAILCOUNT = 0
 
+// Mainnet DAI by default
+let DAI_TOKEN_ADDR = '0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359';
+let P_DAI_TOKEN_ADDR = '0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359';
+
+let leapNetwork;
+
 let mainStyle = {
   width:"100%",
   height:"100%",
@@ -90,6 +96,11 @@ let titleImage = (
 if (window.location.hostname.indexOf("localhost") >= 0 || window.location.hostname.indexOf("10.0.0.107") >= 0) {
   XDAI_PROVIDER = "wss://testnet-node1.leapdao.org:1443";
   WEB3_PROVIDER = "https://rinkeby.infura.io/v3/f039330d8fb747e48a7ce98f51400d65"
+  leapNetwork = "Leap Testnet";
+  // LEAP token instead of DAI
+  DAI_TOKEN_ADDR = '0xD2D0F8a6ADfF16C2098101087f9548465EC96C98';
+  P_DAI_TOKEN_ADDR = '0xD2D0F8a6ADfF16C2098101087f9548465EC96C98';
+
   CLAIM_RELAY = false;
   ERC20NAME = false;
   ERC20TOKEN = false;
@@ -120,6 +131,10 @@ else if (window.location.hostname.indexOf("xdai") >= 0) {
 else if (window.location.hostname.indexOf("burner.leapdao.org") >= 0) {
   XDAI_PROVIDER = "wss://testnet-node1.leapdao.org:1443";
   WEB3_PROVIDER = "wss://rinkeby.infura.io/ws/v3/f039330d8fb747e48a7ce98f51400d65";
+  // LEAP token instead of DAI
+  DAI_TOKEN_ADDR = '0xD2D0F8a6ADfF16C2098101087f9548465EC96C98';
+  P_DAI_TOKEN_ADDR = '0xD2D0F8a6ADfF16C2098101087f9548465EC96C98';  
+  leapNetwork = "Leap Testnet";
   CLAIM_RELAY = false;
   ERC20NAME = false;
   ERC20TOKEN = false;
@@ -128,6 +143,26 @@ else if (window.location.hostname.indexOf("burner.leapdao.org") >= 0) {
 else if (window.location.hostname.indexOf("sundai.io") >= 0) {
   XDAI_PROVIDER = "wss://mainnet-node1.leapdao.org:1443";
   WEB3_PROVIDER = "wss://mainnet.infura.io/ws/v3/f039330d8fb747e48a7ce98f51400d65";
+  leapNetwork = "Leap Network";
+
+  // mainnet sunDAI for Plasma DAI
+  P_DAI_TOKEN_ADDR = '0x3cC0DF021dD36eb378976142Dc1dE3F5726bFc48';
+  
+  CLAIM_RELAY = false;
+  ERC20NAME = false;
+  ERC20TOKEN = false;
+  ERC20IMAGE = false;
+}
+else if (window.location.hostname.indexOf("sundai.local") >= 0) {
+  XDAI_PROVIDER = "wss://testnet-node1.leapdao.org:1443";
+  WEB3_PROVIDER = "wss://rinkeby.infura.io/ws/v3/f039330d8fb747e48a7ce98f51400d65";
+  leapNetwork = "Leap Testnet";
+
+  // testnet LEAP for DAI
+  // testnet sunDAI for Plasma DAI
+  DAI_TOKEN_ADDR = '0xD2D0F8a6ADfF16C2098101087f9548465EC96C98';
+  P_DAI_TOKEN_ADDR = '0xeFb369E2c694Bc0ba31945e0D3ac91Ab8E943be3';
+  
   CLAIM_RELAY = false;
   ERC20NAME = false;
   ERC20TOKEN = false;
@@ -405,12 +440,12 @@ class App extends Component {
     setTimeout(this.longPoll.bind(this),150)
 
     // NOTE: Change this to mainnet again when ready for mainnet launch.
-    let mainnetweb3 = new Web3(new Web3.providers.WebsocketProvider(WEB3_PROVIDER));
+    let mainnetweb3 = new Web3(WEB3_PROVIDER);
     let ensContract = new mainnetweb3.eth.Contract(require("./contracts/ENS.abi.js"),require("./contracts/ENS.address.js"))
     let daiContract;
     let bridgeContract;
     try{
-      daiContract = new mainnetweb3.eth.Contract(require("./contracts/StableCoin.abi.js"),"0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359")
+      daiContract = new mainnetweb3.eth.Contract(require("./contracts/StableCoin.abi.js"),DAI_TOKEN_ADDR)
       bridgeContract = new mainnetweb3.eth.Contract(require("./contracts/Bridge.abi.js"), require("./contracts/Bridge.address.js"))
     }catch(e){
       console.log("ERROR LOADING DAI Stablecoin Contract",e)
@@ -1098,7 +1133,7 @@ render() {
     header = (
       <Header
         openScanner={this.openScanner.bind(this)}
-        network={this.state.network}
+        network={leapNetwork || this.state.network}
         total={totalBalance}
         ens={this.state.ens}
         title={this.state.title}
@@ -1315,7 +1350,7 @@ render() {
 
           let defaultBalanceDisplay = (
             <div>
-              <Balance icon={xdai} selected={false} text={"xdai"} amount={this.state.xdaiBalance} address={account} dollarDisplay={dollarDisplay} />
+              <Balance icon={xdai} selected={false} text={"sunDAI"} amount={this.state.xdaiBalance} address={account} dollarDisplay={dollarDisplay} />
               <Ruler/>
             </div>
           )
@@ -1805,6 +1840,7 @@ render() {
                     mainnetweb3={this.state.mainnetweb3}
                     xdaiweb3={this.state.xdaiweb3}
                     daiContract={this.state.daiContract}
+                    pdaiContract={this.state.pdaiContract}
                     ensContract={this.state.ensContract}
                     bridgeContract={this.state.bridgeContract}
                     isVendor={this.state.isVendor}
@@ -1924,7 +1960,7 @@ render() {
           if (state.xdaiweb3) {
             let pdaiContract;
             try{
-              pdaiContract = new state.xdaiweb3.eth.Contract(require("./contracts/StableCoin.abi.js"),"0x3cC0DF021dD36eb378976142Dc1dE3F5726bFc48")
+              pdaiContract = new state.xdaiweb3.eth.Contract(require("./contracts/StableCoin.abi.js"),P_DAI_TOKEN_ADDR)
             }catch(e){
               console.log("ERROR LOADING DAI Stablecoin Contract",e)
             }
@@ -2040,12 +2076,13 @@ async function tokenSend(to, value, gasLimit, txData, cb) {
   }
 
   value = xdaiweb3.utils.toWei(""+value, "ether")
+  const color = await xdaiweb3.getColor(P_DAI_TOKEN_ADDR);
 
   let receipt;
   if (metaAccount) {
-    receipt = await tokenSendV2(account, to, value, 2, xdaiweb3, web3, metaAccount.privateKey)
+    receipt = await tokenSendV2(account, to, value, color, xdaiweb3, web3, metaAccount.privateKey)
   } else {
-    receipt = await tokenSendV2(account, to, value, 2, xdaiweb3, web3, null)
+    receipt = await tokenSendV2(account, to, value, color, xdaiweb3, web3, null)
   }
   // NOTE: The callback cb is not used correctly in the format 
   // cb(error, receipt) throughout the app. We hence cannot send errors in
