@@ -147,10 +147,42 @@ export default class Exchange extends React.Component {
     setInterval(() => this.updatePendingExits(daiAddress, xdaiweb3), 5000);
   }
 
+  // NOTE: This function promisifies this.props.tx
+  async tx(...args) {
+    console.log(args);
+    return new Promise(resolve => this.props.tx(...args, resolve))
+  }
+
+  async maybeApprovePDai(amountWei) {
+    
+    const pDaiAllowance = await this.props.daiContract.methods.allowance(
+      this.state.daiAddress,
+      this.props.pdaiContract._address,
+    ).call({ from: this.state.daiAddress })
+
+    // Only trigger allowance dialogue when amount is more than allowance
+    if (new BN(pDaiAllowance).lt(new BN(amountWei))) {
+      this.setState({
+        loaderBarColor:"#f5eb4a",
+        loaderBarStatusText: "Approving sunDai amount for Plasma bridge"
+      })
+
+      const metaMaskDaiContract = new this.props.web3.eth.Contract(this.props.daiContract._jsonInterface,this.props.daiContract._address)
+
+      const receipt = await this.tx(
+        metaMaskDaiContract.methods.approve(this.props.pdaiContract._address, amountWei),
+        150000, 0, 0,
+      );
+
+      console.log(receipt);
+      return receipt;
+    }
+  }
+
   updatePendingExits(daiAddress, xdaiweb3) {
     const account = daiAddress;
-    const tokenAddr = this.props.daiContract._address;
-
+    const tokenAddr = this.props.pdaiContract._address;
+                    
     xdaiweb3.getColor(tokenAddr)
     .then(color => {
       return fetch(
@@ -582,6 +614,8 @@ export default class Exchange extends React.Component {
 
         let paramsObject
         if (this.props.network === "LeapTestnet" || this.props.network == "LeapMainnet") {
+          await this.maybeApprovePDai(amountWei);
+
           const allowance = await this.props.daiContract.methods.allowance(
             this.state.daiAddress,
             this.props.bridgeContract._address
@@ -672,6 +706,8 @@ export default class Exchange extends React.Component {
         const amountWei =  web3.utils.toWei(""+amount,"ether")
 
         if (this.props.network === "LeapTestnet" || this.props.network === "LeapMainnet") {
+          await this.maybeApprovePDai(amountWei);
+
           const allowance = await daiContract.methods.allowance(
             this.state.daiAddress,
             bridgeContract._address
@@ -1437,9 +1473,6 @@ export default class Exchange extends React.Component {
                 console.log("AMOUNT:",this.state.amount,"DAI BALANCE:",this.props.daiBalance)
                 console.log("Withdrawing to ",toDaiBridgeAccount)
 
-
-
-
                 if(this.state.xdaiMetaAccount){
                   //send funds using metaaccount on xdai
 
@@ -1459,8 +1492,7 @@ export default class Exchange extends React.Component {
 
                   // TODO: get real decimals
                   const amount = bi(this.state.amount * 10 ** 18);
-                  const tokenAddr = this.props.daiContract._address;
-                  console.log('MetA!!!', signer);
+                  const tokenAddr = this.props.pdaiContract._address;
                   this.state.xdaiweb3.getColor(tokenAddr)
                     .then(color =>
                       Exit.fastSellAmount(
@@ -1498,8 +1530,8 @@ export default class Exchange extends React.Component {
                   }else{
                     // TODO: get real decimals
                     const amount = bi(this.state.amount * 10 ** 18);
-                    const tokenAddr = this.props.daiContract._address;
-
+                    const tokenAddr = this.props.pdaiContract._address;
+                    
                     this.state.xdaiweb3.getColor(tokenAddr)
                       .then(color =>
                         Exit.fastSellAmount(
