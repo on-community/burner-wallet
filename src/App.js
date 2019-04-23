@@ -1556,6 +1556,7 @@ render() {
                     setReceipt={this.setReceipt}
                     changeAlert={this.changeAlert}
                     dollarDisplay={dollarDisplay}
+                    pDaiTokenAddr={P_DAI_TOKEN_ADDR}
                   />
                 </div>
                 <Bottom
