@@ -551,6 +551,8 @@ export default class Exchange extends React.Component {
       response.data.average=response.data.average + (response.data.average*GASBOOSTPRICE)
       let gwei = Math.round(response.data.average*100)/1000
 
+      const color = await this.state.xdaiweb3.getColor(this.props.pdaiContract._address);
+      
       if(this.state.mainnetMetaAccount){
         //send funds using metaaccount on mainnet
         const amountWei = this.state.mainnetweb3.utils.toWei(""+amount,"ether")
@@ -617,7 +619,7 @@ export default class Exchange extends React.Component {
         paramsObject.data = this.props.bridgeContract.methods.deposit(
           this.state.daiAddress,
           amountWei,
-          0
+          color,
         ).encodeABI()
         console.log("====================== >>>>>>>>> paramsObject!!!!!!!",paramsObject)
 
@@ -688,7 +690,7 @@ export default class Exchange extends React.Component {
           bridgeContract.methods.deposit(
             this.state.daiAddress,
             amountWei,
-            0
+            color,
           ),
           ///TODO LET ME PASS IN A CERTAIN AMOUNT OF GAS INSTEAD OF LEANING BACK ON THE <GAS> COMPONENT!!!!!
           150000,
