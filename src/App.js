@@ -438,7 +438,7 @@ class App extends Component {
     intervalLong = setInterval(this.longPoll.bind(this),45000)
     setTimeout(this.longPoll.bind(this),150)
 
-    let mainnetweb3 = new Web3(new Web3.providers.WebsocketProvider(WEB3_PROVIDER));
+    let mainnetweb3 = new Web3(WEB3_PROVIDER);
     let ensContract = new mainnetweb3.eth.Contract(require("./contracts/ENS.abi.js"),require("./contracts/ENS.address.js"))
     let daiContract;
     let bridgeContract;
@@ -2090,7 +2090,6 @@ async function tokenSend(to, value, gasLimit, txData, cb) {
   }
 
   value = xdaiweb3.utils.toWei(""+value, "ether")
-
   const color = await xdaiweb3.getColor(P_DAI_TOKEN_ADDR);
 
   let receipt;
