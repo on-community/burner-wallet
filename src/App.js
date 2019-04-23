@@ -1611,6 +1611,7 @@ render() {
                         changeAlert={this.changeAlert}
                         dollarDisplay={dollarDisplay}
                         convertToDollar={convertToDollar}
+                        pDaiTokenAddr={P_DAI_TOKEN_ADDR}
                       />
                     </Card>
                     <Bottom
