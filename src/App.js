@@ -1835,6 +1835,7 @@ render() {
                     mainnetweb3={this.state.mainnetweb3}
                     xdaiweb3={this.state.xdaiweb3}
                     daiContract={this.state.daiContract}
+                    pdaiContract={this.state.pdaiContract}
                     ensContract={this.state.ensContract}
                     bridgeContract={this.state.bridgeContract}
                     isVendor={this.state.isVendor}
