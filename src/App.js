@@ -435,7 +435,7 @@ class App extends Component {
     setTimeout(this.longPoll.bind(this),150)
 
     // NOTE: Change this to mainnet again when ready for mainnet launch.
-    let mainnetweb3 = new Web3(new Web3.providers.WebsocketProvider("wss://rinkeby.infura.io/ws/v3/f039330d8fb747e48a7ce98f51400d65"));
+    let mainnetweb3 = new Web3(WEB3_PROVIDER);
     let ensContract = new mainnetweb3.eth.Contract(require("./contracts/ENS.abi.js"),require("./contracts/ENS.address.js"))
     let daiContract;
     let bridgeContract;
@@ -2071,7 +2071,6 @@ async function tokenSend(to, value, gasLimit, txData, cb) {
   }
 
   value = xdaiweb3.utils.toWei(""+value, "ether")
-
   const color = await xdaiweb3.getColor(P_DAI_TOKEN_ADDR);
 
   let receipt;
