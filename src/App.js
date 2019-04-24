@@ -139,7 +139,7 @@ else if (window.location.hostname.indexOf("burner.leapdao.org") >= 0) {
   WEB3_PROVIDER = "wss://rinkeby.infura.io/ws/v3/f039330d8fb747e48a7ce98f51400d65";
   // LEAP token instead of DAI
   DAI_TOKEN_ADDR = '0xD2D0F8a6ADfF16C2098101087f9548465EC96C98';
-  P_DAI_TOKEN_ADDR = '0xD2D0F8a6ADfF16C2098101087f9548465EC96C98';  
+  P_DAI_TOKEN_ADDR = '0xD2D0F8a6ADfF16C2098101087f9548465EC96C98';
   leapNetwork = "Leap Testnet";
   // Testnet Leap Bridge(ExitHandler)
   BRIDGE_ADDR = '0x2c2a3b359edbCFE3c3Ac0cD9f9F1349A96C02530';
@@ -156,7 +156,7 @@ else if (window.location.hostname.indexOf("sundai.io") >= 0) {
 
   // mainnet sunDAI for Plasma DAI
   P_DAI_TOKEN_ADDR = '0x3cC0DF021dD36eb378976142Dc1dE3F5726bFc48';
-  
+
   CLAIM_RELAY = false;
   ERC20NAME = false;
   ERC20TOKEN = false;
@@ -172,7 +172,7 @@ else if (window.location.hostname.indexOf("sundai.local") >= 0 ||
   // testnet sunDAI for Plasma DAI
   DAI_TOKEN_ADDR = '0xD2D0F8a6ADfF16C2098101087f9548465EC96C98';
   P_DAI_TOKEN_ADDR = '0xeFb369E2c694Bc0ba31945e0D3ac91Ab8E943be3';
-  
+
   // Testnet Leap Bridge(ExitHandler)
   BRIDGE_ADDR = '0x2c2a3b359edbCFE3c3Ac0cD9f9F1349A96C02530';
 
@@ -1743,7 +1743,7 @@ render() {
                       // Use xDai as default token
                       const tokenAddress = ERC20TOKEN === false ? 0 : this.state.contracts[ERC20TOKEN]._address;
                       // -- Temp hacks
-                      const expirationTime = 365; // Hard-coded to 1 year link expiration. 
+                      const expirationTime = 365; // Hard-coded to 1 year link expiration.
                       const amountToSend = amount*10**18 ; // Conversion to wei
                       // --
                       if(!ERC20TOKEN)
@@ -2082,37 +2082,42 @@ const isNFT = (color: Number): boolean => color >= NFT_COLOR_BASE;
 
 // NOTE: This function is used heavily by legacy code. We've reimplemented it's
 // body though.
-// NOTE2: Color is currently hard-coded. Use tokenSendV2 to send specific colors.
 async function tokenSend(to, value, gasLimit, txData, cb) {
   let { account, web3, xdaiweb3, metaAccount } = this.state
-  if(typeof gasLimit == "function"){
+  if(typeof gasLimit === "function"){
     cb = gasLimit
   }
 
-  if(typeof txData == "function"){
+  if(typeof txData === "function"){
     cb = txData
   }
 
   value = xdaiweb3.utils.toWei(""+value, "ether")
   const color = await xdaiweb3.getColor(P_DAI_TOKEN_ADDR);
+  try {
+    const receipt = await tokenSendV2(
+      account,
+      to,
+      value,
+      color,
+      xdaiweb3,
+      web3,
+      metaAccount && metaAccount.privateKey
+    )
 
-  const receipt = await tokenSendV2(
-    account,
-    to,
-    value,
-    color,
-    xdaiweb3,
-    web3,
-    metaAccount && metaAccount.privateKey
-  )
-
-  // NOTE: The callback cb is not used correctly in the format 
-  // cb(error, receipt) throughout the app. We hence cannot send errors in
-  // the callback :(
-  // TODO: leap-core doesn't return receipts as part of their architecture.
-  // This will have to be addressed as part of this issue:
-  // https://github.com/leapdao/burner-wallet/issues/1
-  cb(receipt);
+    cb(null, receipt);
+  } catch(err) {
+    cb({
+      error: err,
+      request: { account, to, value, color },
+    });
+    // NOTE: The callback cb of tokenSend is not used correctly in the expected
+    // format cb(error, receipt) throughout the app. We hence cannot send
+    // errors in the callback :( When no receipt is returned (e.g. null), the
+    // burner wallet will react with not resolving the "sending" view. This is
+    // not ideal and should be changed in the future. We opened an issue on the
+    // upstream repo: https://github.com/austintgriffith/burner-wallet/issues/157
+  }
 }
 
 async function tokenSendV2(from, to, value, color, xdaiweb3, web3, privateKey) {
@@ -2134,7 +2139,49 @@ async function tokenSendV2(from, to, value, color, xdaiweb3, web3, privateKey) {
 
   const signedTx = privateKey ? await transaction.signAll(privateKey) : await transaction.signWeb3(web3);
 
-  return await xdaiweb3.eth.sendSignedTransaction(signedTx.hex())
+  let receipt;
+  try {
+    receipt = await xdaiweb3.eth.sendSignedTransaction(signedTx.hex())
+  } catch(err) {
+      // NOTE: Leap's node currently doesn't implement the "newBlockHeaders"
+      // JSON-RPC call. When a transaction is rejected by a node,
+      // sendSignedTransaction hence throws an error. We simply ignore this
+      // error here and use the polling tactic below. For more details see:
+      // https://github.com/leapdao/leap-node/issues/255
+
+      const messageToIgnore = "Failed to subscribe to new newBlockHeaders to confirm the transaction receipts.";
+      // NOTE: In the case where we want to ignore web3's error message, there's
+      // "\r\n {}" included in the error message, which is why we cannot
+      // compare with the equal operator, but have to use String.includes.
+      if (!err.message.includes(messageToIgnore)) {
+        throw err;
+      }
+  }
+
+  // NOTE: Leapdao's Plasma implementation currently doesn't return receipts.
+  // We hence have to periodically query the leap node to check whether our
+  // transaction has been included into the chain. We assume that if it hasn't
+  // been included after 5000ms (50 rounds at a 100ms timeout), it failed.
+  // Unfortunately, at this point we cannot provide an error message for why
+  // the transaction wasn't included as the leap node doesn't provide one.
+  let rounds = 50;
+  let txIncluded = false;
+  while (rounds--) {
+      const res = await xdaiweb3.eth.getTransaction(signedTx.hash())
+
+      if (res && res.blockHash) {
+          txIncluded = true;
+          break;
+      } else {
+        setTimeout(null, 100);
+      }
+  }
+
+  if (txIncluded) {
+    return receipt;
+  } else {
+    throw new Error("Transaction wasn't included into a block.");
+  }
 }
 
 let sortByBlockNumberDESC = (a,b)=>{
