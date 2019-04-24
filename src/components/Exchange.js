@@ -2234,10 +2234,6 @@ export default class Exchange extends React.Component {
       )
     }
 
-
-
-
-
     let sendEthButton = (
       <button className="btn btn-large w-100" disabled={buttonsDisabled} style={this.props.buttonStyle.secondary} onClick={()=>{
         this.setState({sendEth:true})
@@ -2502,7 +2498,7 @@ export default class Exchange extends React.Component {
               </Scaler>
             </div>
             <div className="col-3 p-1" style={{marginTop:8}}>
-              {sendEthButton}
+              {this.state.mainnetMetaAccount ? sendEthButton : null}
             </div>
           </div>
 
