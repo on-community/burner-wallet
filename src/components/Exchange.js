@@ -564,7 +564,84 @@ export default class Exchange extends React.Component {
   canSendDai() {
     return (this.state.daiSendToAddress && this.state.daiSendToAddress.length === 42 && parseFloat(this.state.daiSendAmount)>0 && parseFloat(this.state.daiSendAmount) <= parseFloat(this.props.daiBalance))
   }
+
   async transferDai(destination,amount,message,cb) {
+    axios.get("https://ethgasstation.info/json/ethgasAPI.json", { crossdomain: true })
+    .catch((err)=>{
+      console.log("Error getting gas price",err)
+    })
+    .then((response)=>{
+      if(response && response.data.average>0&&response.data.average<200){
+
+        this.setState({
+          loaderBarColor:"#f5eb4a",
+          loaderBarStatusText:message,
+        })
+
+        response.data.average=response.data.average + (response.data.average*GASBOOSTPRICE)
+        let gwei = Math.round(response.data.average*100)/1000
+        if(this.state.mainnetMetaAccount){
+          //send funds using metaaccount on mainnet
+
+          let paramsObject = {
+            from: this.state.daiAddress,
+            value: 0,
+            gas: 100000,
+            gasPrice: Math.round(gwei * 1000000000)
+          }
+          console.log("====================== >>>>>>>>> paramsObject!!!!!!!",paramsObject)
+
+          paramsObject.to = this.props.daiContract._address
+          paramsObject.data = this.props.daiContract.methods.transfer(
+            destination,
+            this.state.mainnetweb3.utils.toWei(""+amount,"ether")
+          ).encodeABI()
+
+          console.log("TTTTTTTTTTTTTTTTTTTTTX",paramsObject)
+
+          this.state.mainnetweb3.eth.accounts.signTransaction(paramsObject, this.state.mainnetMetaAccount.privateKey).then(signed => {
+            console.log("========= >>> SIGNED",signed)
+              this.state.mainnetweb3.eth.sendSignedTransaction(signed.rawTransaction).on('receipt', (receipt)=>{
+                console.log("META RECEIPT",receipt)
+                if(receipt&&receipt.transactionHash&&!metaReceiptTracker[receipt.transactionHash]){
+                  metaReceiptTracker[receipt.transactionHash] = true
+                  cb(receipt)
+                }
+              }).on('error', (err)=>{
+                console.log("EEEERRRRRRRROOOOORRRRR ======== >>>>>",err)
+                this.props.changeAlert({type: 'danger',message: err.toString()});
+              }).then(console.log)
+          });
+
+        }else{
+          //send funds using metamask (or other injected web3 ... should be checked and on mainnet)
+          console.log("Depositing to ",toDaiBridgeAccount)
+
+          this.setState({
+            loaderBarColor:"#f5eb4a",
+            loaderBarStatusText:message,
+          })
+
+          let metaMaskDaiContract = new this.props.web3.eth.Contract(this.props.daiContract._jsonInterface,this.props.daiContract._address)
+          console.log("CURRENT DAI CONTRACT YOU NEED TO GET ABI FROM:",this.props.daiContract)
+          this.props.tx(metaMaskDaiContract.methods.transfer(
+            destination,
+            this.state.mainnetweb3.utils.toWei(""+amount,"ether")
+            ///TODO LET ME PASS IN A CERTAIN AMOUNT OF GAS INSTEAD OF LEANING BACK ON THE <GAS> COMPONENT!!!!!
+          ),120000,0,0,(receipt)=>{
+            if(receipt){
+              console.log("SESSION WITHDRAWN:",receipt)
+              cb(receipt)
+            }
+          })
+        }
+      }else{
+        console.log("ERRORed RESPONSE FROM ethgasstation",response)
+      }
+    })
+  }
+
+  async depositDaiToXdai(destination,amount,message,cb) {
     let response
     try {
       response = await axios.get("https://ethgasstation.info/json/ethgasAPI.json", { crossdomain: true })
@@ -1373,7 +1450,7 @@ export default class Exchange extends React.Component {
                   }
                 })
                 //send ERC20 DAI to 0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016 (toXdaiBridgeAccount)
-                this.transferDai(toXdaiBridgeAccount,this.state.amount,"Sending funds to bridge...",()=>{
+                this.depositDaiToXdai(toXdaiBridgeAccount,this.state.amount,"Sending funds to bridge...",()=>{
                   this.setState({
                     amount:"",
                     loaderBarColor:"#4ab3f5",
