@@ -89,11 +89,15 @@ export  default ({openScanner, network, total, dollarDisplay, ens, title, titleI
 
   let topLeft
 
+  const explorerUrl = network === 'Leap Network'
+    ? 'https://mainnet.leapdao.org/explorer/address/'
+    : 'https://testnet.leapdao.org/explorer/address/';
+
   if(view=="main" || view=="exchange"){
     opacity = 1.0
     topLeft = (
       <div style={{zIndex:-2,position:"absolute",left:16,top:4,zIndex:1,cursor:"pointer"}}  >
-        <a href={"https://testnet.leapdao.org/explorer/address/"+address} target="_blank" style={{color:"#FFFFFF"}}>
+        <a href={explorerUrl + address} target="_blank" style={{color:"#FFFFFF"}}>
           {blockieDisplay} <div style={{position:"absolute",left:60,top:15,fontSize:14}}>{name}</div>
         </a>
       </div>
