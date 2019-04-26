@@ -1271,31 +1271,7 @@ export default class App extends Component {
                 }else{
                   moreButtons = ""
                 }
-  
-  
-  
-                let selected = "xDai"
-                let extraTokens = ""
-  
-                let defaultBalanceDisplay = (
-                  <div>
-                    <Balance icon={xdai} selected={false} text={"xdai"} amount={this.state.xdaiBalance} address={account} dollarDisplay={dollarDisplay} />
-                    <Ruler/>
-                  </div>
-                )
-  
-                if(ERC20TOKEN){
-                  selected = ERC20NAME
-                  extraTokens = (
-                    <div>
-                      <Balance icon={ERC20IMAGE} selected={selected} text={ERC20NAME} amount={this.state.balance} address={account} dollarDisplay={dollarDisplay} />
-                      <Ruler/>
-                    </div>
-                  )
-                  defaultBalanceDisplay = extraTokens
-                }
-  
-  
+
                 let badgeDisplay = ""
                 if(this.state.badgeBalance>0){
                   badgeDisplay = (
@@ -1404,7 +1380,7 @@ export default class App extends Component {
 
               let defaultBalanceDisplay = (
                 <div>
-                  <Balance icon={xdai} selected={false} text={"xdai"} amount={this.state.xdaiBalance} address={account} dollarDisplay={dollarDisplay} />
+                  <Balance icon={xdai} selected={false} text={"MNY"} amount={this.state.xdaiBalance} address={account} dollarDisplay={dollarDisplay} />
                   <Ruler/>
                 </div>
               )
@@ -1413,7 +1389,7 @@ export default class App extends Component {
                 selected = ERC20NAME
                 extraTokens = (
                   <div>
-                    <Balance icon={ERC20IMAGE} selected={selected} text={ERC20NAME} amount={this.state.balance} address={account} dollarDisplay={dollarDisplay} />
+                    <Balance icon={ERC20IMAGE} selected={selected} text={"MNY"} amount={this.state.balance} address={account} dollarDisplay={dollarDisplay} />
                     <Ruler/>
                   </div>
                 )
@@ -1520,7 +1496,7 @@ export default class App extends Component {
                     <Card p={3}>
                       {extraTokens}
 
-                      <Balance icon={xdai} selected={selected} text={"xDai"} amount={this.state.xdaiBalance} address={account} dollarDisplay={dollarDisplay}/>
+                      <Balance icon={xdai} selected={selected} text={"MNY"} amount={this.state.xdaiBalance} address={account} dollarDisplay={dollarDisplay}/>
 
                       <Balance icon={dai} selected={selected} text={"DAI"} amount={this.state.daiBalance} address={account} dollarDisplay={dollarDisplay}/>
 

@@ -158,7 +158,7 @@ export default class Exchange extends React.Component {
     if (new BN(pDaiAllowance).lt(new BN(amountWei))) {
       this.setState({
         loaderBarColor:"#f5eb4a",
-        loaderBarStatusText: "Approving sunDai amount for Plasma bridge"
+        loaderBarStatusText: "Approving MNY amount for Plasma bridge"
       })
 
       const metaMaskDaiContract = new this.props.web3.eth.Contract(this.props.daiContract._jsonInterface,this.props.daiContract._address)
@@ -189,7 +189,7 @@ export default class Exchange extends React.Component {
       console.log(rsp);
       const pendingValue = rsp.reduce((sum, v) => add(sum, bi(v.value)), bi(0));
       const pendingTokens = parseInt(String(divide(pendingValue, bi(10 ** 16)))) / 100;
-      const pendingMsg = "Pending exits of " + pendingTokens.toString() + " sunDAI";
+      const pendingMsg = "Pending exits of " + pendingTokens.toString() + " MNY";
       this.setState({
         pendingMsg
       });
@@ -376,7 +376,7 @@ export default class Exchange extends React.Component {
 
     if (!this.state.notSundai) {
       const exitableSunDaiBalance = await this.getWrappedDaiBalance()
-        .catch(e => console.error('Failed to read extable daiBalance for sunDai', e));
+        .catch(e => console.error('Failed to read extable daiBalance for MNY', e));
       this.setState({ exitableSunDaiBalance });
     }
 
@@ -1186,7 +1186,7 @@ export default class Exchange extends React.Component {
                     });
 
                   }else{
-                    console.log("Use MetaMask to withdraw "+this.props.ERC20NAME+" to xDai")
+                    console.log("Use MetaMask to withdraw "+this.props.ERC20NAME+" to MNY")
                     this.props.tx(
                       this.props.contracts[this.props.ERC20VENDOR].deposit()
                     ,120000,0,amountOfxDaiToDeposit,(receipt)=>{
@@ -1265,14 +1265,14 @@ export default class Exchange extends React.Component {
                   <button className="btn btn-large w-100"  disabled={buttonsDisabled} style={this.props.buttonStyle.primary} onClick={async ()=>{
 
                     let amountOfxDaiToWithdraw = this.state.xdaiweb3.utils.toWei(""+this.state.amount,'ether')
-                    console.log("Using "+this.props.ERC20NAME+" contract to withdraw "+amountOfxDaiToWithdraw+" xDai")
+                    console.log("Using "+this.props.ERC20NAME+" contract to withdraw "+amountOfxDaiToWithdraw+" MNY")
 
                     this.setState({
                       xdaiToDendaiMode:"withdrawing",
                       xdaiBalanceAtStart:this.props.xdaiBalance,
                       xdaiBalanceShouldBe:parseFloat(this.props.xdaiBalance)+parseFloat(this.state.amount),
                       loaderBarColor:"#3efff8",
-                      loaderBarStatusText:"Withdrawing "+this.props.ERC20NAME+" to xDai...",
+                      loaderBarStatusText:"Withdrawing "+this.props.ERC20NAME+" to MNY...",
                       loaderBarPercent:0,
                       loaderBarStartTime: Date.now(),
                       loaderBarClick:()=>{
@@ -1313,7 +1313,7 @@ export default class Exchange extends React.Component {
                       });
 
                     }else{
-                      console.log("Use MetaMask to withdraw "+this.props.ERC20NAME+" to xDai")
+                      console.log("Use MetaMask to withdraw "+this.props.ERC20NAME+" to MNY")
                       this.props.tx(
                         this.props.contracts[this.props.ERC20VENDOR].withdraw(""+amountOfxDaiToWithdraw)
                       ,120000,0,0,(receipt)=>{
@@ -1349,7 +1349,7 @@ export default class Exchange extends React.Component {
                  this.setState({xdaiToDendaiMode:"deposit"})
                }}>
                   <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
-                    <i className="fas fa-arrow-up"  /> sunDAI to {this.props.ERC20NAME}
+                    <i className="fas fa-arrow-up"  /> MNY to {this.props.ERC20NAME}
                   </Scaler>
                </button>
              </div>
@@ -1359,7 +1359,7 @@ export default class Exchange extends React.Component {
                  this.setState({xdaiToDendaiMode:"withdraw"})
                }}>
                  <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
-                  <i className="fas fa-arrow-down" /> {this.props.ERC20NAME} to sunDAI
+                  <i className="fas fa-arrow-down" /> {this.props.ERC20NAME} to MNY
                  </Scaler>
                </button>
              </div>
@@ -1590,7 +1590,7 @@ export default class Exchange extends React.Component {
                   const tokenAddr = this.props.pdaiContract._address;
                   const color = await this.state.xdaiweb3.getColor(tokenAddr);
 
-                  // special handler for sunDai
+                  // special handler for MNY
                   if (!this.state.notSundai) {
                     this.directSell(amount, color);
                     return;
@@ -1609,7 +1609,7 @@ export default class Exchange extends React.Component {
                     console.log(err);
                     this.props.changeAlert({
                       type: 'warning',
-                      message: 'Failed to exit sunDAI'
+                      message: 'Failed to exit MNY'
                     });
                   });
 
@@ -1638,7 +1638,7 @@ export default class Exchange extends React.Component {
 
                     const color = await this.state.xdaiweb3.getColor(tokenAddr);
 
-                    // special handler for sunDai
+                    // special handler for MNY
                     if (!this.state.notSundai) {
                       this.directSell(amount, color);
                       return;
@@ -1656,7 +1656,7 @@ export default class Exchange extends React.Component {
                       console.log(err);
                       this.props.changeAlert({
                         type: 'warning',
-                        message: 'Failed to exit sunDAI'
+                        message: 'Failed to exit MNY'
                       });
                     });
                   }
@@ -1678,7 +1678,7 @@ export default class Exchange extends React.Component {
             this.setState({daiToXdaiMode:"deposit"})
           }} >
             <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
-              DAI to xDai
+              DAI to MNY
             </Scaler>
           </Button>
 
@@ -1693,7 +1693,7 @@ export default class Exchange extends React.Component {
             this.setState({daiToXdaiMode:"withdraw"})
           }} >
             <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
-              xDai to DAI
+              MNY to DAI
             </Scaler>
           </Button>
         </Flex>
@@ -2544,7 +2544,7 @@ export default class Exchange extends React.Component {
               <img style={logoStyle} src={this.props.xdai} />
             </div>
             <div className="col-3 p-1" style={{marginTop:8}}>
-              sunDAI
+              MNY
             </div>
             <div className="col-4 p-1" style={{marginTop:8,whiteSpace:"nowrap"}}>
                 <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
