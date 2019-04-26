@@ -1210,6 +1210,63 @@ export default class App extends Component {
                       </div>
                     )
                   }
+
+                if(this.state.isAdmin){
+                  moreButtons = (
+                    <div>
+                      <Admin
+                        ERC20VENDOR={ERC20VENDOR}
+                        ERC20TOKEN={ERC20TOKEN}
+                        vendors={this.state.vendors}
+                        buttonStyle={buttonStyle}
+                        changeView={this.changeView}
+                        contracts={this.state.contracts}
+                        tx={this.state.tx}
+                        web3={this.state.web3}
+                      />
+                      <MoreButtons
+                        buttonStyle={buttonStyle}
+                        changeView={this.changeView}
+                        isVendor={false}
+                      />
+                    </div>
+                  )
+                }else if(this.state.isVendor&&this.state.isVendor.isAllowed){
+                  moreButtons = (
+                    <div>
+                      <Vendor
+                        ERC20VENDOR={ERC20VENDOR}
+                        products={this.state.products}
+                        address={account}
+                        buttonStyle={buttonStyle}
+                        changeView={this.changeView}
+                        changeAlert={this.changeAlert}
+                        contracts={this.state.contracts}
+                        vendor={this.state.isVendor}
+                        tx={this.state.tx}
+                        web3={this.state.web3}
+                        dollarDisplay={dollarDisplay}
+                      />
+                      <MoreButtons
+                        buttonStyle={buttonStyle}
+                        changeView={this.changeView}
+                        isVendor={true}
+                      />
+                    </div>
+                  )
+                }else if(ERC20TOKEN){
+                  moreButtons = (
+                    <div>
+                      <MoreButtons
+                        buttonStyle={buttonStyle}
+                        changeView={this.changeView}
+                        isVendor={false}
+                      />
+                    </div>
+                  )
+                }else{
+                  moreButtons = ""
+                }
   
   
   
@@ -1232,43 +1289,6 @@ export default class App extends Component {
                     </div>
                   )
                   defaultBalanceDisplay = extraTokens
-                }
-                if(this.state.isAdmin){
-                  moreButtons = (
-                    <div>
-                      <Card>
-                        <NavCard title={(
-                          <div>
-                            {i18n.t('history_chat')}
-                          </div>
-                        )} goBack={this.goBack.bind(this)}/>
-                        {defaultBalanceDisplay}
-                        <History
-                          buttonStyle={buttonStyle}
-                          saveKey={this.saveKey.bind(this)}
-                          metaAccount={this.state.metaAccount}
-                          transactionsByAddress={ERC20TOKEN?this.state.fullTransactionsByAddress:this.state.transactionsByAddress}
-                          address={account}
-                          balance={balance}
-                          changeAlert={this.changeAlert}
-                          changeView={this.changeView}
-                          target={targetAddress}
-                          block={this.state.block}
-                          send={this.state.send}
-                          web3={this.state.web3}
-                          goBack={this.goBack.bind(this)}
-                          dollarDisplay={dollarDisplay}
-                        />
-                      </Card>
-  
-                      <Bottom
-                        action={()=>{
-                          this.changeView('main')
-                        }}
-                      />
-                    </div>
-  
-                  )
                 }
   
   
