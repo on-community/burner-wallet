@@ -1602,6 +1602,7 @@ render() {
                         setReceipt={this.setReceipt}
                         changeAlert={this.changeAlert}
                         dollarDisplay={dollarDisplay}
+                        convertToDollar={convertToDollar}
                       />
                     </Card>
                     <Bottom
@@ -1778,6 +1779,7 @@ render() {
                         changeView={this.changeView}
                         goBack={this.goBack.bind(this)}
                         dollarDisplay={dollarDisplay}
+                        convertToDollar={convertToDollar}
                       />
                     </Card>
                     <Bottom
