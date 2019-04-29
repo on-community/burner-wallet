@@ -7,19 +7,11 @@ before_install:
   - pip install --user awscli
   - export PATH=$PATH:$HOME/.local/bin
 
-before_script:
-  - npm i
-
-script: npm run build
+install:
+  - npm install
+  - npm run build
 
 cache: npm
-
-before_deploy:
-  - rm -R node_modules
-  - rm -R src
-  - rm gulpfile.js
-  - rm yarn.lock
-  - rm package.json
 
 deploy:
   - provider: s3
