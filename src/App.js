@@ -1735,6 +1735,7 @@ export default class App extends Component {
                         <NavCard title={i18n.t('request_funds_title')} goBack={this.goBack.bind(this)}/>
                         {defaultBalanceDisplay}
                         <RequestFunds
+                          block={this.state.block}
                           view={this.state.view}
                           mainStyle={mainStyle}
                           buttonStyle={buttonStyle}
