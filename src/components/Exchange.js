@@ -42,7 +42,7 @@ import {
 
 import { fromRpcSig } from 'ethereumjs-util';
 
-import { bi, add, divide } from 'jsbi-utils';
+import { bi, add, divide, lessThan } from 'jsbi-utils';
 
 const BN = Web3.utils.BN
 
@@ -176,17 +176,22 @@ export default class Exchange extends React.Component {
   updatePendingExits(daiAddress, xdaiweb3) {
     const account = daiAddress;
     const tokenAddr = this.props.pdaiContract._address;
-                    
+
     xdaiweb3.getColor(tokenAddr)
     .then(color => {
       return fetch(
-      `https://yxygzjw6s4.execute-api.eu-west-1.amazonaws.com/testnet/exits/${account}/${color}`,
+        `${this.props.marketMaker}/exits/${account}/${color}`,
       { method: "GET", mode: "cors" }
       );
     })
     .then(response => response.json())
     .then(rsp => {
-      console.log(rsp);
+      if (rsp.length === 0 || !rsp.reduce) {
+        this.setState({
+          pendingMsg: null
+        });
+        return;
+      }
       const pendingValue = rsp.reduce((sum, v) => add(sum, bi(v.value)), bi(0));
       const pendingTokens = parseInt(String(divide(pendingValue, bi(10 ** 16)))) / 100;
       const pendingMsg = "Pending exits of " + pendingTokens.toString() + " MNY";
@@ -196,17 +201,160 @@ export default class Exchange extends React.Component {
     });
   };
 
+  async directSell(amount, color) {
+    // do not allow to exit more than daiBalance from SunDai
+    if (lessThan(bi(this.state.exitableSunDaiBalance), amount)) {
+      amount = bi(this.state.exitableSunDaiBalance);
+    }
 
+    console.log('Exitable amount', amount.toString());
+
+    let rsp;
+    try {
+      rsp = await axios.get(`${this.props.marketMaker}/deals`, { crossdomain: true });
+    } catch (e) {
+      console.error(e);
+      this.props.changeAlert({
+        type: 'warning',
+        message: 'Failed to fetch markets'
+      });
+      return;
+    }
+
+    if (rsp.data.errorMessage) {
+      console.error(rsp.data);
+      this.props.changeAlert({
+        type: 'warning',
+        message: 'Failed to fetch markets: ' + rsp.data.errorMessage
+      });
+      return;
+    }
+
+    const market = rsp.data.deals.find(deal => deal.color === color);
+    if (!market || lessThan(bi(market.balance), amount)) {
+      this.props.changeAlert({
+        type: 'warning',
+        message: 'Not enough liquidity on the market'
+      });
+      return;
+    }
+
+    const mmAddress = rsp.data.address;
+    console.log(mmAddress, rsp);
+
+    this.setState({
+      daiToXdaiMode:"withdrawing",
+      amount:"",
+      loaderBarColor:"#4ab3f5",
+      loaderBarStatusText:"Transferring to market maker...",
+    })
+
+    let receipt;
+    try {
+      receipt = await this.props.tokenSendV2(
+        this.state.daiAddress,
+        mmAddress,
+        amount,
+        color,
+        this.state.xdaiweb3,
+        this.props.web3,
+        this.state.mainnetMetaAccount && this.state.mainnetMetaAccount.privateKey
+      )
+    } catch (e) {
+      console.error(e);
+      this.props.changeAlert({
+        type: 'warning',
+        message: 'Transfer failed'
+      });
+      return;
+    }
+
+    console.log('Transfer to market maker:', receipt);
+
+    this.setState({
+      daiToXdaiMode:"withdrawing",
+      amount:"",
+      loaderBarColor:"#4ab3f5",
+      loaderBarStatusText:"Posting sell request...",
+    })
+
+    rsp = await axios.post(`${this.props.marketMaker}/directSell`, {
+      txHash: receipt.hash,
+    }, { crossdomain: true }).catch(e => {
+      console.error(e);
+      this.props.changeAlert({
+        type: 'warning',
+        message: 'Failed to sell'
+      });
+      return;
+    });
+
+    if (rsp.data.errorMessage) {
+      console.error(rsp.data);
+      this.props.changeAlert({
+        type: 'warning',
+        message: 'Failed to sell: ' + rsp.data.errorMessage
+      });
+      return;
+    }
+
+    console.log('Payout tx', rsp.data);
+
+    this.setState({
+      daiToXdaiMode:"withdrawing",
+      amount:"",
+      loaderBarColor:"#4ab3f5",
+      loaderBarStatusText:"Waiting for payout tx to mine...",
+    })
+    receipt = await this.getTransactionReceiptMined(rsp.data);
+
+    console.log('got receipt', receipt);
+
+    if (!receipt.status) {
+      console.log('Payout failed');
+      return;
+    };
+
+    this.setState({
+      daiToXdaiMode:"withdrawing",
+      amount:"",
+      loaderBarColor:"#4ab3f5",
+      loaderBarStatusText:"Unwrapping MNY for DAI...",
+    })
+
+    const web3 = this.state.mainnetMetaAccount
+      ? this.props.mainnetweb3
+      : this.props.web3;
+
+    const sunDai = new web3.eth.Contract(
+      require("../contracts/SunDai.abi.js"),
+      this.props.pdaiContract._address,
+    )
+
+    receipt = await this.rootNetworkSend(sunDai._address, sunDai.methods.burnSender());
+
+    console.log(receipt);
+
+    this.setState({
+      daiToXdaiMode:"",
+      amount:"",
+      loaderBarColor:"#4ab3f5",
+      loaderBarStatusText:"",
+    })
+  }
+ 
   updateState = (key, value) => {
     this.setState({ [key]: value },()=>{
       this.setState({ canSendDai: this.canSendDai(), canSendEth: this.canSendEth(), canSendXdai: this.canSendXdai() })
     });
   };
+
   async componentDidMount(){
     this.setState({ canSendDai: this.canSendDai(), canSendEth: this.canSendEth(), canSendXdai: this.canSendXdai() })
     interval = setInterval(this.poll.bind(this),1500)
     setTimeout(this.poll.bind(this),250)
   }
+
   async getWrappedDaiBalance() {
     // not a sundai, return immediatelly
     if (this.state.notSundai) return true;
@@ -1434,7 +1582,7 @@ export default class Exchange extends React.Component {
       //     </div>
       //   )
       //}else
-      if(this.props.ethBalance<=0){
+    if(this.props.ethBalance<=0){
         daiToXdaiDisplay = (
           <div className="content ops row" style={{textAlign:'center'}}>
             <div className="col-12 p-1">
@@ -1590,7 +1738,7 @@ export default class Exchange extends React.Component {
                   const tokenAddr = this.props.pdaiContract._address;
                   const color = await this.state.xdaiweb3.getColor(tokenAddr);
 
-                  // special handler for MNY
+                  // special handler for sunDai
                   if (!this.state.notSundai) {
                     this.directSell(amount, color);
                     return;
@@ -1638,7 +1786,7 @@ export default class Exchange extends React.Component {
 
                     const color = await this.state.xdaiweb3.getColor(tokenAddr);
 
-                    // special handler for MNY
+                    // special handler for sunDai
                     if (!this.state.notSundai) {
                       this.directSell(amount, color);
                       return;
@@ -1677,26 +1825,25 @@ export default class Exchange extends React.Component {
           <Button width={1} mr={2} icon={'ArrowUpward'} disabled={buttonsDisabled} onClick={()=>{
             this.setState({daiToXdaiMode:"deposit"})
           }} >
-            <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
-              DAI to MNY
-            </Scaler>
-          </Button>
-
-          <Button width={1} 
-            icon={'ArrowDownward'}
-            disabled={
-              buttonsDisabled ||
-              (!this.state.notSundai && this.state.exitableSunDaiBalance === 0) ||
-              parseFloat(this.props.xdaiBalance) === 0
-            } 
-            onClick={()=>{
-            this.setState({daiToXdaiMode:"withdraw"})
-          }} >
-            <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
-              MNY to DAI
-            </Scaler>
-          </Button>
-        </Flex>
+          <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
+            DAI to MNY
+          </Scaler>
+        </Button>
+        <Button width={1}
+          icon={'ArrowDownward'}
+          disabled={
+            buttonsDisabled ||
+            (!this.state.notSundai && this.state.exitableSunDaiBalance === 0) ||
+            parseFloat(this.props.xdaiBalance) === 0
+          }
+          onClick={()=>{
+          this.setState({daiToXdaiMode:"withdraw"})
+        }} >
+          <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
+            MNY to DAI
+          </Scaler>
+        </Button>
+       </Flex>
       )
     }
 
@@ -2535,6 +2682,9 @@ export default class Exchange extends React.Component {
     //console.log("eth price ",this.props.ethBalance,this.props.ethprice)
     return (
       <Box mt={4}>
+	{this.state.pendingMsg && <div style={{
+          padding: '10px', backgroundColor: 'black', color: 'white', textAlign: 'center'
+        }}>{this.state.pendingMsg}</div> }
 
         {tokenDisplay}
 
