@@ -42,6 +42,8 @@ import Exchange from './components/Exchange'
 import Bottom from './components/Bottom';
 import customRPCHint from './customRPCHint.png';
 import namehash from 'eth-ens-namehash'
+import { Card, Box, ThemeProvider } from 'rimble-ui';
+import theme from "./theme"
 
 //https://github.com/lesnitsky/react-native-webview-messaging/blob/v1/examples/react-native/web/index.js
 import RNMessageChannel from 'react-native-webview-messaging';
@@ -72,6 +74,16 @@ let LOADERIMAGE = burnerlogo
 let HARDCODEVIEW// = "loader"// = "receipt"
 let FAILCOUNT = 0
 
+// Mainnet DAI by default
+let DAI_TOKEN_ADDR = '0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359';
+let P_DAI_TOKEN_ADDR = '0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359';
+
+// Mainnet Leap Bridge(ExitHandler)
+let BRIDGE_ADDR = '0x0036192587fD788B75829fbF79BE7F06E4F23B21';
+
+let MARKET_MAKER;
+let leapNetwork;
+
 let mainStyle = {
   width:"100%",
   height:"100%",
@@ -88,9 +100,22 @@ let titleImage = (
 )
 
 //<i className="fas fa-fire" />
-if (window.location.hostname.indexOf("localhost") >= 0 || window.location.hostname.indexOf("10.0.0.107") >= 0) {
+if (window.location.hostname.indexOf("localhost") >= 0 ||
+    window.location.hostname.indexOf("10.0.0.107") >= 0 ||
+    // For Tim to debug
+    window.location.hostname.indexOf("sundai.fritz.box") >= 0) {
   XDAI_PROVIDER = "wss://testnet-node1.leapdao.org:1443";
   WEB3_PROVIDER = "https://rinkeby.infura.io/v3/f039330d8fb747e48a7ce98f51400d65"
+  leapNetwork = "Leap Testnet";
+  // LEAP token instead of DAI
+  DAI_TOKEN_ADDR = '0xD2D0F8a6ADfF16C2098101087f9548465EC96C98';
+  P_DAI_TOKEN_ADDR = '0xD2D0F8a6ADfF16C2098101087f9548465EC96C98';
+
+  // Testnet Leap Bridge(ExitHandler)
+  BRIDGE_ADDR = '0x2c2a3b359edbCFE3c3Ac0cD9f9F1349A96C02530';
+
+  MARKET_MAKER = 'https://2nuxsb25he.execute-api.eu-west-1.amazonaws.com/testnet';
+
   CLAIM_RELAY = false;
   ERC20NAME = false;
   ERC20TOKEN = false;
@@ -121,14 +146,49 @@ else if (window.location.hostname.indexOf("xdai") >= 0) {
 else if (window.location.hostname.indexOf("burner.leapdao.org") >= 0) {
   XDAI_PROVIDER = "wss://testnet-node1.leapdao.org:1443";
   WEB3_PROVIDER = "wss://rinkeby.infura.io/ws/v3/f039330d8fb747e48a7ce98f51400d65";
+  // LEAP token instead of DAI
+  DAI_TOKEN_ADDR = '0xD2D0F8a6ADfF16C2098101087f9548465EC96C98';
+  P_DAI_TOKEN_ADDR = '0xD2D0F8a6ADfF16C2098101087f9548465EC96C98';
+  leapNetwork = "Leap Testnet";
+  // Testnet Leap Bridge(ExitHandler)
+  BRIDGE_ADDR = '0x2c2a3b359edbCFE3c3Ac0cD9f9F1349A96C02530';
+
+  MARKET_MAKER = 'https://2nuxsb25he.execute-api.eu-west-1.amazonaws.com/testnet';
+
   CLAIM_RELAY = false;
   ERC20NAME = false;
   ERC20TOKEN = false;
   ERC20IMAGE = false;
 }
 else if (window.location.hostname.indexOf("sundai.io") >= 0) {
+  XDAI_PROVIDER = "wss://mainnet-node1.leapdao.org:1443";
+  WEB3_PROVIDER = "wss://mainnet.infura.io/ws/v3/f039330d8fb747e48a7ce98f51400d65";
+  leapNetwork = "Leap Network";
+
+  // mainnet sunDAI for Plasma DAI
+  P_DAI_TOKEN_ADDR = '0x3cC0DF021dD36eb378976142Dc1dE3F5726bFc48';
+
+  MARKET_MAKER = 'https://k238oyefqc.execute-api.eu-west-1.amazonaws.com/mainnet';
+  
+  CLAIM_RELAY = false;
+  ERC20NAME = false;
+  ERC20TOKEN = false;
+  ERC20IMAGE = false;
+}
+else if (window.location.hostname.indexOf("sundai.local") >= 0 ||
+         window.location.hostname.indexOf("sundai.fritz.box") >= 0) {
   XDAI_PROVIDER = "wss://testnet-node1.leapdao.org:1443";
   WEB3_PROVIDER = "wss://rinkeby.infura.io/ws/v3/f039330d8fb747e48a7ce98f51400d65";
+  leapNetwork = "Leap Testnet";
+
+  // testnet sunDAI for Plasma DAI
+  DAI_TOKEN_ADDR = '0xD2D0F8a6ADfF16C2098101087f9548465EC96C98';
+  P_DAI_TOKEN_ADDR = '0xeFb369E2c694Bc0ba31945e0D3ac91Ab8E943be3';
+
+  // Testnet Leap Bridge(ExitHandler)
+  BRIDGE_ADDR = '0x2c2a3b359edbCFE3c3Ac0cD9f9F1349A96C02530';
+
+  MARKET_MAKER = 'https://2nuxsb25he.execute-api.eu-west-1.amazonaws.com/testnet';
   CLAIM_RELAY = false;
   ERC20NAME = false;
   ERC20TOKEN = false;
@@ -242,7 +302,7 @@ let dollarDisplay = (amount)=>{
 let interval
 let intervalLong
 
-class App extends Component {
+export default class App extends Component {
   constructor(props) {
 
 
@@ -406,25 +466,17 @@ class App extends Component {
     intervalLong = setInterval(this.longPoll.bind(this),45000)
     setTimeout(this.longPoll.bind(this),150)
 
-    // NOTE: Change this to mainnet again when ready for mainnet launch.
-    let mainnetweb3 = new Web3(new Web3.providers.WebsocketProvider("wss://rinkeby.infura.io/ws/v3/f039330d8fb747e48a7ce98f51400d65"));
+    let mainnetweb3 = new Web3(WEB3_PROVIDER);
     let ensContract = new mainnetweb3.eth.Contract(require("./contracts/ENS.abi.js"),require("./contracts/ENS.address.js"))
     let daiContract;
     let bridgeContract;
     try{
-      daiContract = new mainnetweb3.eth.Contract(require("./contracts/StableCoin.abi.js"),"0xD2D0F8a6ADfF16C2098101087f9548465EC96C98")
-      bridgeContract = new mainnetweb3.eth.Contract(require("./contracts/Bridge.abi.js"), require("./contracts/Bridge.address.js"))
+      daiContract = new mainnetweb3.eth.Contract(require("./contracts/StableCoin.abi.js"),DAI_TOKEN_ADDR)
+      bridgeContract = new mainnetweb3.eth.Contract(require("./contracts/Bridge.abi.js"), BRIDGE_ADDR)
     }catch(e){
       console.log("ERROR LOADING DAI Stablecoin Contract",e)
     }
-    let xdaiweb3 = helpers.extendWeb3(new Web3(new Web3.providers.WebsocketProvider(XDAI_PROVIDER)));
-    let pdaiContract
-    try{
-      pdaiContract = new xdaiweb3.eth.Contract(require("./contracts/StableCoin.abi.js"),"0xD2D0F8a6ADfF16C2098101087f9548465EC96C98")
-    }catch(e){
-      console.log("ERROR LOADING DAI Stablecoin Contract",e)
-    }
-    this.setState({mainnetweb3,ensContract,xdaiweb3,daiContract, pdaiContract, bridgeContract})
+    this.setState({mainnetweb3,ensContract,daiContract,bridgeContract})
   }
   componentWillUnmount() {
     clearInterval(interval)
@@ -540,11 +592,8 @@ class App extends Component {
         }catch(e){
           console.log(e)
         }
-
-
-
       }
-      if(this.state.xdaiweb3){
+      if(this.state.xdaiweb3 && this.state.pdaiContract){
         xdaiBalance = await this.state.pdaiContract.methods.balanceOf(this.state.account).call();
         xdaiBalance = this.state.xdaiweb3.utils.fromWei(""+xdaiBalance,'ether')
       }
@@ -555,11 +604,9 @@ class App extends Component {
 
   }
   longPoll() {
-    const uniswap = "https://uniswap-analytics.appspot.com/api/v1/ticker?exchangeAddress="
-    const daiExchange = "0x09cabec1ead1c0ba254b09efb3ee13841712be14"
-    axios.get(uniswap+daiExchange)
+    axios.get("https://api.coinmarketcap.com/v2/ticker/1027/")
      .then((response)=>{
-       const ethprice = response.data.price
+       let ethprice = response.data.data.quotes.USD.price
        this.setState({ethprice})
      })
   }
@@ -587,6 +634,7 @@ class App extends Component {
         console.log("this.state.isVendor",this.state.isVendor)
 
 
+        console.log(!this.state.metaAccount || this.state.balance>=0.05 || this.state.xdaiBalance>=0.05 || this.state.ethBalance>=0.0005 || this.state.daiBalance>=0.05 || (this.state.isVendor&&this.state.isVendor.isAllowed))
         if(!this.state.metaAccount || this.state.balance>=0.05 || this.state.xdaiBalance>=0.05 || this.state.ethBalance>=0.0005 || this.state.daiBalance>=0.05 || (this.state.isVendor&&this.state.isVendor.isAllowed)){
           this.setState({possibleNewPrivateKey:false,withdrawFromPrivateKey:this.state.possibleNewPrivateKey},()=>{
             this.changeView('withdraw_from_private')
@@ -790,686 +838,631 @@ class App extends Component {
   console.log("Setting state",view)
   this.setState({ view, scannerState:false },cb);
   };
-changeAlert = (alert, hide=true) => {
-  clearTimeout(this.alertTimeout);
-  this.setState({ alert });
-  if (alert && hide) {
-    this.alertTimeout = setTimeout(() => {
-      this.setState({ alert: null });
-    }, 2000);
+  changeAlert = (alert, hide=true) => {
+    clearTimeout(this.alertTimeout);
+    this.setState({ alert });
+    if (alert && hide) {
+      this.alertTimeout = setTimeout(() => {
+        this.setState({ alert: null });
+      }, 2000);
+    }
+  };
+  goBack(view="main"){
+    console.log("GO BACK")
+    this.changeView(view)
+    this.setState({scannerOpen: false })
+    setTimeout(()=>{window.scrollTo(0,0)},60)
   }
-};
-goBack(view="main"){
-  console.log("GO BACK")
-  this.changeView(view)
-  this.setState({scannerOpen: false })
-  setTimeout(()=>{window.scrollTo(0,0)},60)
-}
-async parseBlocks(parseBlock,recentTxs,transactionsByAddress){
-  let web3;
-  if (this.state.leapProvider) {
-    web3 = this.state.leapProvider
-  } else {
-    web3 = this.state.web3
-  }
-  let block = await web3.eth.getBlock(parseBlock)
-  let updatedTxs = false
-
-  if(block){
-    let transactions = block.transactions
-
-    //console.log("transactions",transactions)
-    for(let t in transactions){
-      //console.log("TX",transactions[t])
-      let tx = await web3.eth.getTransaction(transactions[t])
-      if(tx && tx.to && tx.from ){
-        //console.log("EEETRTTTTERTETETET",tx)
-        let smallerTx = {
-          hash:tx.hash,
-          to:tx.to.toLowerCase(),
-          from:tx.from.toLowerCase(),
-          value:web3.utils.fromWei(""+tx.value,"ether"),
-          blockNumber:tx.blockNumber
-        }
-
-
-        if(smallerTx.from==this.state.account || smallerTx.to==this.state.account){
-          if(tx.input&&tx.input!="0x"){
-
-            let decrypted = await this.decryptInput(tx.input)
-
-            if(decrypted){
-              smallerTx.data = decrypted
-              smallerTx.encrypted = true
-            }
-
-            try{
-              smallerTx.data = web3.utils.hexToUtf8(tx.input)
-            }catch(e){}
-            //console.log("smallerTx at this point",smallerTx)
-            if(!smallerTx.data){
-              smallerTx.data = " *** unable to decrypt data *** "
-            }
+  async parseBlocks(parseBlock,recentTxs,transactionsByAddress){
+    let web3;
+    if (this.state.xdaiweb3) {
+      web3 = this.state.xdaiweb3
+    } else {
+      web3 = this.state.web3
+    }
+    let block = await web3.eth.getBlock(parseBlock)
+    let updatedTxs = false
+    if(block){
+      let transactions = block.transactions
+  
+      //console.log("transactions",transactions)
+      for(let t in transactions){
+        //console.log("TX",transactions[t])
+        let tx = await this.state.web3.eth.getTransaction(transactions[t])
+        if(tx && tx.to && tx.from ){
+          //console.log("EEETRTTTTERTETETET",tx)
+          let smallerTx = {
+            hash:tx.hash,
+            to:tx.to.toLowerCase(),
+            from:tx.from.toLowerCase(),
+            value:this.state.web3.utils.fromWei(""+tx.value,"ether"),
+            blockNumber:tx.blockNumber
           }
-          updatedTxs = this.addTxIfAccountMatches(recentTxs,transactionsByAddress,smallerTx) || updatedTxs
+  
+  
+          if(smallerTx.from==this.state.account || smallerTx.to==this.state.account){
+            if(tx.input&&tx.input!="0x"){
+  
+              let decrypted = await this.decryptInput(tx.input)
+  
+              if(decrypted){
+                smallerTx.data = decrypted
+                smallerTx.encrypted = true
+              }
+  
+              try{
+                smallerTx.data = this.state.web3.utils.hexToUtf8(tx.input)
+              }catch(e){}
+              //console.log("smallerTx at this point",smallerTx)
+              if(!smallerTx.data){
+                smallerTx.data = " *** unable to decrypt data *** "
+              }
+            }
+            updatedTxs = this.addTxIfAccountMatches(recentTxs,transactionsByAddress,smallerTx) || updatedTxs
+          }
+  
         }
-
       }
     }
+    return updatedTxs
   }
-  return updatedTxs
-}
-async decryptInput(input){
-  let key = input.substring(0,32)
-  //console.log("looking in memory for key",key)
-  let cachedEncrypted = this.state[key]
-  if(!cachedEncrypted){
-    //console.log("nothing found in memory, checking local storage")
-    cachedEncrypted = localStorage.getItem(key)
-  }
-  if(cachedEncrypted){
-    return cachedEncrypted
-  }else{
-    if(this.state.metaAccount){
-      try{
-        let parsedData = EthCrypto.cipher.parse(input.substring(2))
-        const endMessage = await EthCrypto.decryptWithPrivateKey(
-          this.state.metaAccount.privateKey, // privateKey
-          parsedData // encrypted-data
-        );
-        return  endMessage
-      }catch(e){}
-    }else{
-      //no meta account? maybe try to setup signing keys?
-      //maybe have a contract that tries do decrypt? \
+  async decryptInput(input){
+    let key = input.substring(0,32)
+    //console.log("looking in memory for key",key)
+    let cachedEncrypted = this.state[key]
+    if(!cachedEncrypted){
+      //console.log("nothing found in memory, checking local storage")
+      cachedEncrypted = localStorage.getItem(key)
     }
+    if(cachedEncrypted){
+      return cachedEncrypted
+    }else{
+      if(this.state.metaAccount){
+        try{
+          let parsedData = EthCrypto.cipher.parse(input.substring(2))
+          const endMessage = await EthCrypto.decryptWithPrivateKey(
+            this.state.metaAccount.privateKey, // privateKey
+            parsedData // encrypted-data
+          );
+          return  endMessage
+        }catch(e){}
+      }else{
+        //no meta account? maybe try to setup signing keys?
+        //maybe have a contract that tries do decrypt? \
+      }
+    }
+    return false
   }
-  return false
-}
-initRecentTxs(){
-  let recentTxs = []
-  if(this.state.recentTx) recentTxs = recentTxs.concat(this.state.recentTxs)
-  let transactionsByAddress = Object.assign({},this.state.transactionsByAddress)
-  if(!recentTxs||recentTxs.length<=0){
-    recentTxs = localStorage.getItem(this.state.account+"recentTxs")
-    try{
-      recentTxs=JSON.parse(recentTxs)
-    }catch(e){
+  initRecentTxs(){
+    let recentTxs = []
+    if(this.state.recentTx) recentTxs = recentTxs.concat(this.state.recentTxs)
+    let transactionsByAddress = Object.assign({},this.state.transactionsByAddress)
+    if(!recentTxs||recentTxs.length<=0){
+      recentTxs = localStorage.getItem(this.state.account+"recentTxs")
+      try{
+        recentTxs=JSON.parse(recentTxs)
+      }catch(e){
+        recentTxs=[]
+      }
+    }
+    if(!recentTxs){
       recentTxs=[]
     }
-  }
-  if(!recentTxs){
-    recentTxs=[]
-  }
-  if(Object.keys(transactionsByAddress).length === 0){
-    transactionsByAddress = localStorage.getItem(this.state.account+"transactionsByAddress")
-    try{
-      transactionsByAddress=JSON.parse(transactionsByAddress)
-    }catch(e){
+    if(Object.keys(transactionsByAddress).length === 0){
+      transactionsByAddress = localStorage.getItem(this.state.account+"transactionsByAddress")
+      try{
+        transactionsByAddress=JSON.parse(transactionsByAddress)
+      }catch(e){
+        transactionsByAddress={}
+      }
+    }
+    if(!transactionsByAddress){
       transactionsByAddress={}
     }
+    return [recentTxs,transactionsByAddress]
   }
-  if(!transactionsByAddress){
-    transactionsByAddress={}
-  }
-  return [recentTxs,transactionsByAddress]
-}
-addTxIfAccountMatches(recentTxs,transactionsByAddress,smallerTx){
-  let updatedTxs = false
-
-  let otherAccount = smallerTx.to
-  if(smallerTx.to==this.state.account){
-    otherAccount = smallerTx.from
-  }
-  if(!transactionsByAddress[otherAccount]){
-    transactionsByAddress[otherAccount] = []
-  }
-
-  let found = false
-  if(parseFloat(smallerTx.value)>0.005){
-    for(let r in recentTxs){
-      if(recentTxs[r].hash==smallerTx.hash/* && (!smallerTx.data || recentTxs[r].data == smallerTx.data)*/){
+  addTxIfAccountMatches(recentTxs,transactionsByAddress,smallerTx){
+    let updatedTxs = false
+  
+    let otherAccount = smallerTx.to
+    if(smallerTx.to==this.state.account){
+      otherAccount = smallerTx.from
+    }
+    if(!transactionsByAddress[otherAccount]){
+      transactionsByAddress[otherAccount] = []
+    }
+  
+    let found = false
+    if(parseFloat(smallerTx.value)>0.005){
+      for(let r in recentTxs){
+        if(recentTxs[r].hash==smallerTx.hash/* && (!smallerTx.data || recentTxs[r].data == smallerTx.data)*/){
+          found = true
+          if(!smallerTx.data || recentTxs[r].data == smallerTx.data){
+            // do nothing, it exists
+          }else{
+            recentTxs[r].data = smallerTx.data
+            updatedTxs=true
+          }
+        }
+      }
+      if(!found){
+        updatedTxs=true
+        recentTxs.push(smallerTx)
+        //console.log("recentTxs after push",recentTxs)
+      }
+    }
+  
+    found = false
+    for(let t in transactionsByAddress[otherAccount]){
+      if(transactionsByAddress[otherAccount][t].hash==smallerTx.hash/* && (!smallerTx.data || recentTxs[r].data == smallerTx.data)*/){
         found = true
-        if(!smallerTx.data || recentTxs[r].data == smallerTx.data){
+        if(!smallerTx.data || transactionsByAddress[otherAccount][t].data == smallerTx.data){
           // do nothing, it exists
         }else{
-          recentTxs[r].data = smallerTx.data
+          transactionsByAddress[otherAccount][t].data = smallerTx.data
+          if(smallerTx.encrypted) transactionsByAddress[otherAccount][t].encrypted = true
           updatedTxs=true
         }
       }
     }
     if(!found){
       updatedTxs=true
-      recentTxs.push(smallerTx)
-      //console.log("recentTxs after push",recentTxs)
+      transactionsByAddress[otherAccount].push(smallerTx)
     }
+  
+    return updatedTxs
   }
-
-  found = false
-  for(let t in transactionsByAddress[otherAccount]){
-    if(transactionsByAddress[otherAccount][t].hash==smallerTx.hash/* && (!smallerTx.data || recentTxs[r].data == smallerTx.data)*/){
-      found = true
-      if(!smallerTx.data || transactionsByAddress[otherAccount][t].data == smallerTx.data){
-        // do nothing, it exists
-      }else{
-        transactionsByAddress[otherAccount][t].data = smallerTx.data
-        if(smallerTx.encrypted) transactionsByAddress[otherAccount][t].encrypted = true
-        updatedTxs=true
-      }
-    }
-  }
-  if(!found){
-    updatedTxs=true
-    transactionsByAddress[otherAccount].push(smallerTx)
-  }
-
-  return updatedTxs
-}
-sortAndSaveTransactions(recentTxs,transactionsByAddress){
-  recentTxs.sort(sortByBlockNumber)
-
-  for(let t in transactionsByAddress){
-    transactionsByAddress[t].sort(sortByBlockNumberDESC)
-  }
-  recentTxs = recentTxs.slice(0,12)
-  localStorage.setItem(this.state.account+"recentTxs",JSON.stringify(recentTxs))
-  localStorage.setItem(this.state.account+"transactionsByAddress",JSON.stringify(transactionsByAddress))
-
-  this.setState({recentTxs:recentTxs,transactionsByAddress:transactionsByAddress},()=>{
-    if(ERC20TOKEN){
-      this.syncFullTransactions()
-    }
-  })
-}
-async addAllTransactionsFromList(recentTxs,transactionsByAddress,theList){
-  let updatedTxs = false
-
-  for(let e in theList){
-    let thisEvent = theList[e]
-    let cleanEvent = Object.assign({},thisEvent)
-    cleanEvent.to = cleanEvent.to.toLowerCase()
-    cleanEvent.from = cleanEvent.from.toLowerCase()
-    cleanEvent.value = this.state.web3.utils.fromWei(""+cleanEvent.value,'ether')
-    cleanEvent.token = ERC20TOKEN
-    if(cleanEvent.data) {
-      let decrypted = await this.decryptInput(cleanEvent.data)
-      if(decrypted){
-        cleanEvent.data = decrypted
-        cleanEvent.encrypted = true
-      }else{
-        try{
-          cleanEvent.data = this.state.web3.utils.hexToUtf8(cleanEvent.data)
-        }catch(e){}
-      }
-    }
-    updatedTxs = this.addTxIfAccountMatches(recentTxs,transactionsByAddress,cleanEvent) || updatedTxs
-  }
-  return updatedTxs
-}
-syncFullTransactions(){
-  let initResult = this.initRecentTxs()
-  let recentTxs = []
-  recentTxs = recentTxs.concat(initResult[0])
-  let transactionsByAddress = Object.assign({},initResult[1])
-
-  let updatedTxs = false
-  updatedTxs = this.addAllTransactionsFromList(recentTxs,transactionsByAddress,this.state.transferTo) || updatedTxs
-  updatedTxs = this.addAllTransactionsFromList(recentTxs,transactionsByAddress,this.state.transferFrom) || updatedTxs
-  updatedTxs = this.addAllTransactionsFromList(recentTxs,transactionsByAddress,this.state.transferToWithData) || updatedTxs
-  updatedTxs = this.addAllTransactionsFromList(recentTxs,transactionsByAddress,this.state.transferFromWithData) || updatedTxs
-
-  if(updatedTxs||!this.state.fullRecentTxs||!this.state.fullTransactionsByAddress){
+  sortAndSaveTransactions(recentTxs,transactionsByAddress){
     recentTxs.sort(sortByBlockNumber)
+  
     for(let t in transactionsByAddress){
       transactionsByAddress[t].sort(sortByBlockNumberDESC)
     }
     recentTxs = recentTxs.slice(0,12)
-    //console.log("FULLRECENT",recentTxs)
-    this.setState({fullRecentTxs:recentTxs,fullTransactionsByAddress:transactionsByAddress})
+    localStorage.setItem(this.state.account+"recentTxs",JSON.stringify(recentTxs))
+    localStorage.setItem(this.state.account+"transactionsByAddress",JSON.stringify(transactionsByAddress))
+  
+    this.setState({recentTxs:recentTxs,transactionsByAddress:transactionsByAddress},()=>{
+      if(ERC20TOKEN){
+        this.syncFullTransactions()
+      }
+    })
   }
-}
-render() {
-  let {
-    web3, account, tx, gwei, block, avgBlockTime, etherscan, balance, metaAccount, burnMetaAccount, view, alert, send
-  } = this.state;
-
-  let networkOverlay = ""
-  // if(web3 && !this.checkNetwork() && view!="exchange"){
-  //   networkOverlay = (
-  //     <div>
-  //       <input style={{zIndex:13,position:'absolute',opacity:0.95,right:48,top:192,width:194}} value="https://dai.poa.network" />
-  //       <img style={{zIndex:12,position:'absolute',opacity:0.95,right:0,top:0,maxHeight:370}} src={customRPCHint} />
-  //     </div>
-  //   )
-  // }
-
-
-  let web3_setup = ""
-  if(web3){
-    web3_setup = (
-      <div>
-      <ContractLoader
-      key="ContractLoader"
-      config={{DEBUG: true}}
-      web3={web3}
-      require={path => {
-        return require(`${__dirname}/${path}`)
-      }}
-      onReady={(contracts, customLoader) => {
-        console.log("contracts loaded", contracts)
-        this.setState({contracts: contracts,customLoader: customLoader}, async () => {
-          console.log("Contracts Are Ready:", contracts)
-          this.checkClaim(tx, contracts);
-        })
-      }}
-      />
-      <Transactions
-      key="Transactions"
-      config={{DEBUG: false, hide: true}}
-      account={account}
-      gwei={gwei}
-      web3={web3}
-      block={block}
-      avgBlockTime={avgBlockTime}
-      etherscan={etherscan}
-      metaAccount={metaAccount}
-      onReady={(state) => {
-        console.log("Transactions component is ready:", state);
-        state.nativeSend = tokenSend.bind(this)
-        //delete state.send
-        state.send = tokenSend.bind(this)
-        console.log(state)
-        this.setState(state)
-
-      }}
-      onReceipt={(transaction, receipt) => {
-        // this is one way to get the deployed contract address, but instead I'll switch
-        //  to a more straight forward callback system above
-        console.log("Transaction Receipt", transaction, receipt)
-      }}
-      />
-      </div>
-    )
+  async addAllTransactionsFromList(recentTxs,transactionsByAddress,theList){
+    let updatedTxs = false
+  
+    for(let e in theList){
+      let thisEvent = theList[e]
+      let cleanEvent = Object.assign({},thisEvent)
+      cleanEvent.to = cleanEvent.to.toLowerCase()
+      cleanEvent.from = cleanEvent.from.toLowerCase()
+      cleanEvent.value = this.state.web3.utils.fromWei(""+cleanEvent.value,'ether')
+      cleanEvent.token = ERC20TOKEN
+      if(cleanEvent.data) {
+        let decrypted = await this.decryptInput(cleanEvent.data)
+        if(decrypted){
+          cleanEvent.data = decrypted
+          cleanEvent.encrypted = true
+        }else{
+          try{
+            cleanEvent.data = this.state.web3.utils.hexToUtf8(cleanEvent.data)
+          }catch(e){}
+        }
+      }
+      updatedTxs = this.addTxIfAccountMatches(recentTxs,transactionsByAddress,cleanEvent) || updatedTxs
+    }
+    return updatedTxs
   }
-
-  let eventParser = ""
-
-
-  let extraHead = ""
-  if(this.state.extraHeadroom){
-    extraHead = (
-      <div style={{marginTop:this.state.extraHeadroom}}>
-      </div>
-    )
+  syncFullTransactions(){
+    let initResult = this.initRecentTxs()
+    let recentTxs = []
+    recentTxs = recentTxs.concat(initResult[0])
+    let transactionsByAddress = Object.assign({},initResult[1])
+  
+    let updatedTxs = false
+    updatedTxs = this.addAllTransactionsFromList(recentTxs,transactionsByAddress,this.state.transferTo) || updatedTxs
+    updatedTxs = this.addAllTransactionsFromList(recentTxs,transactionsByAddress,this.state.transferFrom) || updatedTxs
+    updatedTxs = this.addAllTransactionsFromList(recentTxs,transactionsByAddress,this.state.transferToWithData) || updatedTxs
+    updatedTxs = this.addAllTransactionsFromList(recentTxs,transactionsByAddress,this.state.transferFromWithData) || updatedTxs
+  
+    if(updatedTxs||!this.state.fullRecentTxs||!this.state.fullTransactionsByAddress){
+      recentTxs.sort(sortByBlockNumber)
+      for(let t in transactionsByAddress){
+        transactionsByAddress[t].sort(sortByBlockNumberDESC)
+      }
+      recentTxs = recentTxs.slice(0,12)
+      //console.log("FULLRECENT",recentTxs)
+      this.setState({fullRecentTxs:recentTxs,fullTransactionsByAddress:transactionsByAddress})
+    }
   }
-
-  let totalBalance = parseFloat(this.state.ethBalance) * parseFloat(this.state.ethprice) + parseFloat(this.state.daiBalance) + parseFloat(this.state.xdaiBalance)
-  if(ERC20TOKEN){
-    totalBalance += parseFloat(this.state.balance)
-  }
-
-  let header = (
-    <div style={{height:50}}>
-    </div>
-  )
-  if(web3){
-    header = (
-      <Header
-        openScanner={this.openScanner.bind(this)}
-        network={this.state.network}
-        total={totalBalance}
-        ens={this.state.ens}
-        title={this.state.title}
-        titleImage={titleImage}
-        mainStyle={mainStyle}
-        address={this.state.account}
-        changeView={this.changeView}
-        balance={balance}
-        view={this.state.view}
-        dollarDisplay={dollarDisplay}
-      />
-    )
-  }
-
-  return (
-    <I18nextProvider i18n={i18n}>
-    <div style={mainStyle}>
-      <div style={innerStyle}>
-        {extraHead}
-        {networkOverlay}
-        {web3_setup}
-
+  render() {
+    let {
+      web3, account, tx, gwei, block, avgBlockTime, etherscan, balance, metaAccount, burnMetaAccount, view, alert, send
+    } = this.state;
+  
+    let networkOverlay = ""
+    // if(web3 && !this.checkNetwork() && view!="exchange"){
+    //   networkOverlay = (
+    //     <div>
+    //       <input style={{zIndex:13,position:'absolute',opacity:0.95,right:48,top:192,width:194}} value="https://dai.poa.network" />
+    //       <img style={{zIndex:12,position:'absolute',opacity:0.95,right:0,top:0,maxHeight:370}} src={customRPCHint} />
+    //     </div>
+    //   )
+    // }
+  
+  
+    let web3_setup = ""
+    if(web3){
+      web3_setup = (
         <div>
-          {header}
-
-
-
-        {web3 /*&& this.checkNetwork()*/ && (() => {
-          //console.log("VIEW:",view)
-
-          let moreButtons = (
-            <MoreButtons
-              buttonStyle={buttonStyle}
-              changeView={this.changeView}
-              isVendor={this.state.isVendor&&this.state.isVendor.isAllowed}
-            />
-          )
-
-          let subBalanceDisplay = ""
-          if(ERC20TOKEN){
-            if(!this.state.gasBalance){
-              subBalanceDisplay = ""
-            }else{
-              subBalanceDisplay = (
-                <div style={{opacity:0.4,fontSize:12,position:'absolute',right:0,marginTop:5}}>
-                {Math.round(this.state.gasBalance*10000)/10000}
-                </div>
-              )
-            }
-
-
-            if(this.state.isAdmin){
-              moreButtons = (
-                <div>
-                  <Admin
-                    ERC20VENDOR={ERC20VENDOR}
-                    ERC20TOKEN={ERC20TOKEN}
-                    vendors={this.state.vendors}
-                    buttonStyle={buttonStyle}
-                    changeView={this.changeView}
-                    contracts={this.state.contracts}
-                    tx={this.state.tx}
-                    web3={this.state.web3}
-                  />
-                  <MoreButtons
-                    buttonStyle={buttonStyle}
-                    changeView={this.changeView}
-                    isVendor={false}
-                  />
-                </div>
-              )
-            }else if(this.state.isVendor&&this.state.isVendor.isAllowed){
-              moreButtons = (
-                <div>
-                  <Vendor
-                    ERC20VENDOR={ERC20VENDOR}
-                    products={this.state.products}
-                    address={account}
-                    buttonStyle={buttonStyle}
-                    changeView={this.changeView}
-                    changeAlert={this.changeAlert}
-                    contracts={this.state.contracts}
-                    vendor={this.state.isVendor}
-                    tx={this.state.tx}
-                    web3={this.state.web3}
-                    dollarDisplay={dollarDisplay}
-                  />
-                  <MoreButtons
-                    buttonStyle={buttonStyle}
-                    changeView={this.changeView}
-                    isVendor={true}
-                  />
-                </div>
-              )
-            }else if(ERC20TOKEN){
-              moreButtons = (
-                <div>
-                  <MoreButtons
-                    buttonStyle={buttonStyle}
-                    changeView={this.changeView}
-                    isVendor={false}
-                  />
-                </div>
-              )
-            }else{
-              moreButtons = ""
-            }
-
-            if(this.state.contracts){
-              eventParser = (
-                <div style={{color:"#000000"}}>
-                  <Events
-                    config={{hide:true}}
-                    contract={this.state.contracts[ERC20TOKEN]}
-                    eventName={"Transfer"}
-                    block={this.state.block}
-                    filter={{from:this.state.account}}
-                    onUpdate={(eventData,allEvents)=>{this.setState({transferFrom:allEvents},this.syncFullTransactions)}}
-                  />
-                  <Events
-                    config={{hide:true}}
-                    contract={this.state.contracts[ERC20TOKEN]}
-                    eventName={"Transfer"}
-                    block={this.state.block}
-                    filter={{to:this.state.account}}
-                    onUpdate={(eventData,allEvents)=>{this.setState({transferTo:allEvents},this.syncFullTransactions)}}
-                  />
-                  <Events
-                    config={{hide:true}}
-                    contract={this.state.contracts[ERC20TOKEN]}
-                    eventName={"TransferWithData"}
-                    block={this.state.block}
-                    filter={{from:this.state.account}}
-                    onUpdate={(eventData,allEvents)=>{this.setState({transferFromWithData:allEvents},this.syncFullTransactions)}}
-                  />
-                  <Events
-                    config={{hide:true}}
-                    contract={this.state.contracts[ERC20TOKEN]}
-                    eventName={"TransferWithData"}
-                    block={this.state.block}
-                    filter={{to:this.state.account}}
-                    onUpdate={(eventData,allEvents)=>{this.setState({transferToWithData:allEvents},this.syncFullTransactions)}}
-                  />
-                  <Events
-                    config={{hide:true}}
-                    contract={this.state.contracts[ERC20VENDOR]}
-                    eventName={"UpdateVendor"}
-                    block={this.state.block}
-                    onUpdate={(vendor, all)=>{
-                      let {vendors} = this.state
-                      console.log("VENDOR",vendor)
-                      if(!vendors[vendor.vendor] || vendors[vendor.vendor].blockNumber<vendor.blockNumber){
-                        vendors[vendor.vendor] = {
-                          name: this.state.web3.utils.hexToUtf8(vendor.name),
-                          isAllowed: vendor.isAllowed,
-                          isActive: vendor.isActive,
-                          vendor: vendor.vendor,
-                          blockNumber: vendor.blockNumber
-                        }
-                      }
-                      this.setState({vendors})
-                    }}
-                  />
-                </div>
-              )
-            }
-          }
-
-
-          if(view.indexOf("account_")==0)
-          {
-
-            let targetAddress = view.replace("account_","")
-            console.log("TARGET",targetAddress)
-            return (
+        <ContractLoader
+        key="ContractLoader"
+        config={{DEBUG: true}}
+        web3={web3}
+        require={path => {
+          return require(`${__dirname}/${path}`)
+        }}
+        onReady={(contracts, customLoader) => {
+          console.log("contracts loaded", contracts)
+          this.setState({contracts: contracts,customLoader: customLoader}, async () => {
+            console.log("Contracts Are Ready:", contracts)
+            this.checkClaim(tx, contracts);
+          })
+        }}
+        />
+        <Transactions
+        key="Transactions"
+        config={{DEBUG: false, hide: true}}
+        account={account}
+        gwei={gwei}
+        web3={web3}
+        block={block}
+        avgBlockTime={avgBlockTime}
+        etherscan={etherscan}
+        metaAccount={metaAccount}
+        onReady={(state) => {
+          console.log("Transactions component is ready:", state);
+          state.nativeSend = tokenSend.bind(this)
+          //delete state.send
+          state.send = tokenSend.bind(this)
+          console.log(state)
+          this.setState(state)
+  
+        }}
+        onReceipt={(transaction, receipt) => {
+          // this is one way to get the deployed contract address, but instead I'll switch
+          //  to a more straight forward callback system above
+          console.log("Transaction Receipt", transaction, receipt)
+        }}
+        />
+        </div>
+      )
+    }
+  
+    let eventParser = ""
+  
+  
+    let extraHead = ""
+    if(this.state.extraHeadroom){
+      extraHead = (
+        <div style={{marginTop:this.state.extraHeadroom}}>
+        </div>
+      )
+    }
+  
+    let totalBalance = parseFloat(this.state.ethBalance) * parseFloat(this.state.ethprice) + parseFloat(this.state.daiBalance) + parseFloat(this.state.xdaiBalance)
+    if(ERC20TOKEN){
+      totalBalance += parseFloat(this.state.balance)
+    }
+  
+    let header = (
+      <div style={{height:50}}>
+      </div>
+    )
+    if(web3){
+      header = (
+        <Header
+          openScanner={this.openScanner.bind(this)}
+          network={leapNetwork || this.state.network}
+          total={totalBalance}
+          ens={this.state.ens}
+          title={this.state.title}
+          titleImage={titleImage}
+          mainStyle={mainStyle}
+          address={this.state.account}
+          changeView={this.changeView}
+          balance={balance}
+          view={this.state.view}
+          dollarDisplay={dollarDisplay}
+        />
+      )
+    }
+  
+    return (
+      <ThemeProvider theme={theme}>
+        <I18nextProvider i18n={i18n}>
+          <div style={mainStyle}>
+            <div style={innerStyle}>
+              {extraHead}
+              {networkOverlay}
+              {web3_setup}
+  
               <div>
-                <div className="main-card card w-100" style={{zIndex:1}}>
+                {header}
+  
+  
+  
+              {web3 /*&& this.checkNetwork()*/ && (() => {
+                //console.log("VIEW:",view)
+  
+                let moreButtons = (
+                  <MoreButtons
+                    buttonStyle={buttonStyle}
+                    changeView={this.changeView}
+                    isVendor={this.state.isVendor&&this.state.isVendor.isAllowed}
+                  />
+                )
+  
+                let subBalanceDisplay = ""
+                if(ERC20TOKEN){
+                  if(!this.state.gasBalance){
+                    subBalanceDisplay = ""
+                  }else{
+                    subBalanceDisplay = (
+                      <div style={{opacity:0.4,fontSize:12,position:'absolute',right:0,marginTop:5}}>
+                        {Math.round(this.state.gasBalance*10000)/10000}
+                      </div>
+                    )
+                  }
 
-                  <NavCard title={(
+                if(this.state.isAdmin){
+                  moreButtons = (
                     <div>
-                      {i18n.t('history_chat')}
+                      <Admin
+                        ERC20VENDOR={ERC20VENDOR}
+                        ERC20TOKEN={ERC20TOKEN}
+                        vendors={this.state.vendors}
+                        buttonStyle={buttonStyle}
+                        changeView={this.changeView}
+                        contracts={this.state.contracts}
+                        tx={this.state.tx}
+                        web3={this.state.web3}
+                      />
+                      <MoreButtons
+                        buttonStyle={buttonStyle}
+                        changeView={this.changeView}
+                        isVendor={false}
+                      />
                     </div>
-                  )} goBack={this.goBack.bind(this)}/>
-                  {defaultBalanceDisplay}
-                  <History
-                    buttonStyle={buttonStyle}
-                    saveKey={this.saveKey.bind(this)}
-                    metaAccount={this.state.metaAccount}
-                    transactionsByAddress={ERC20TOKEN?this.state.fullTransactionsByAddress:this.state.transactionsByAddress}
-                    address={account}
-                    balance={balance}
-                    changeAlert={this.changeAlert}
-                    changeView={this.changeView}
-                    target={targetAddress}
-                    block={this.state.block}
-                    send={this.state.send}
-                    web3={this.state.web3}
-                    goBack={this.goBack.bind(this)}
-                    dollarDisplay={dollarDisplay}
-                  />
-                </div>
-                <Bottom
-                  action={()=>{
-                    this.changeView('main')
-                  }}
-                />
-              </div>
+                  )
+                }else if(this.state.isVendor&&this.state.isVendor.isAllowed){
+                  moreButtons = (
+                    <div>
+                      <Vendor
+                        ERC20VENDOR={ERC20VENDOR}
+                        products={this.state.products}
+                        address={account}
+                        buttonStyle={buttonStyle}
+                        changeView={this.changeView}
+                        changeAlert={this.changeAlert}
+                        contracts={this.state.contracts}
+                        vendor={this.state.isVendor}
+                        tx={this.state.tx}
+                        web3={this.state.web3}
+                        dollarDisplay={dollarDisplay}
+                      />
+                      <MoreButtons
+                        buttonStyle={buttonStyle}
+                        changeView={this.changeView}
+                        isVendor={true}
+                      />
+                    </div>
+                  )
+                }else if(ERC20TOKEN){
+                  moreButtons = (
+                    <div>
+                      <MoreButtons
+                        buttonStyle={buttonStyle}
+                        changeView={this.changeView}
+                        isVendor={false}
+                      />
+                    </div>
+                  )
+                }else{
+                  moreButtons = ""
+                }
 
-            )
-          }
+                let badgeDisplay = ""
+                if(this.state.badgeBalance>0){
+                  badgeDisplay = (
+                    <div>
+                      <Badges
+                        badges={this.state.badges}
+                        address={account}
+                        contracts={this.state.contracts}
+                        web3={this.state.web3}
+                        xdaiweb3={this.state.xdaiweb3}
+                        pdaiContract={this.state.pdaiContract}
+                        pDaiTokenAddr={P_DAI_TOKEN_ADDR}
+                        //amount={false}
+                        privateKey={this.state.withdrawFromPrivateKey}
+                        goBack={this.goBack.bind(this)}
+                        changeView={this.changeView}
+                        changeAlert={this.changeAlert}
+                        dollarDisplay={dollarDisplay}
+                        tokenSendV2={tokenSendV2.bind(this)}
+                        selectBadge={this.selectBadge.bind(this)}
+                        contracts={this.state.contracts}
+                        web3={this.state.web3}
+                        xdaiweb3={this.state.xdaiweb3}
+                        //amount={false}
+                        privateKey={this.state.withdrawFromPrivateKey}
+                        goBack={this.goBack.bind(this)}
+                        changeView={this.changeView}
+                        changeAlert={this.changeAlert}
+                        dollarDisplay={dollarDisplay}
+                        tokenSendV2={tokenSendV2.bind(this)}
+                      />
+                      <Ruler/>
+                      <Bottom
+                        action={()=>{
+                          this.changeView('main')
+                        }}
+                      />
+                    </div>
+                  )
+                }else{
+                  moreButtons = ""
+                }
 
-          let selected = "xDai"
-          let extraTokens = ""
+                if(this.state.contracts){
+                  eventParser = (
+                    <div style={{color:"#000000"}}>
+                      <Events
+                        config={{hide:true}}
+                        contract={this.state.contracts[ERC20TOKEN]}
+                        eventName={"Transfer"}
+                        block={this.state.block}
+                        filter={{from:this.state.account}}
+                        onUpdate={(eventData,allEvents)=>{this.setState({transferFrom:allEvents},this.syncFullTransactions)}}
+                      />
+                      <Events
+                        config={{hide:true}}
+                        contract={this.state.contracts[ERC20TOKEN]}
+                        eventName={"Transfer"}
+                        block={this.state.block}
+                        filter={{to:this.state.account}}
+                        onUpdate={(eventData,allEvents)=>{this.setState({transferTo:allEvents},this.syncFullTransactions)}}
+                      />
+                      <Events
+                        config={{hide:true}}
+                        contract={this.state.contracts[ERC20TOKEN]}
+                        eventName={"TransferWithData"}
+                        block={this.state.block}
+                        filter={{from:this.state.account}}
+                        onUpdate={(eventData,allEvents)=>{this.setState({transferFromWithData:allEvents},this.syncFullTransactions)}}
+                      />
+                      <Events
+                        config={{hide:true}}
+                        contract={this.state.contracts[ERC20TOKEN]}
+                        eventName={"TransferWithData"}
+                        block={this.state.block}
+                        filter={{to:this.state.account}}
+                        onUpdate={(eventData,allEvents)=>{this.setState({transferToWithData:allEvents},this.syncFullTransactions)}}
+                      />
+                      <Events
+                        config={{hide:true}}
+                        contract={this.state.contracts[ERC20VENDOR]}
+                        eventName={"UpdateVendor"}
+                        block={this.state.block}
+                        onUpdate={(vendor, all)=>{
+                          let {vendors} = this.state
+                          console.log("VENDOR",vendor)
+                          if(!vendors[vendor.vendor] || vendors[vendor.vendor].blockNumber<vendor.blockNumber){
+                            vendors[vendor.vendor] = {
+                              name: this.state.web3.utils.hexToUtf8(vendor.name),
+                              isAllowed: vendor.isAllowed,
+                              isActive: vendor.isActive,
+                              vendor: vendor.vendor,
+                              blockNumber: vendor.blockNumber
+                            }
+                          }
+                          this.setState({vendors})
+                        }}
+                      />
+                    </div>
+                  )
+                }
+              }
 
-          let defaultBalanceDisplay = (
-            <div>
-              <Balance icon={xdai} selected={false} text={"xdai"} amount={this.state.xdaiBalance} address={account} dollarDisplay={dollarDisplay} />
-              <Ruler/>
-            </div>
-          )
+              let selected = "xDai"
+              let extraTokens = ""
 
-          if(ERC20TOKEN){
-            selected = ERC20NAME
-            extraTokens = (
-              <div>
-                <Balance icon={ERC20IMAGE} selected={selected} text={ERC20NAME} amount={this.state.balance} address={account} dollarDisplay={dollarDisplay} />
-                <Ruler/>
-              </div>
-            )
-            defaultBalanceDisplay = extraTokens
-          }
-
-          let badgeDisplay = ""
-          if(this.state.badgeBalance>0){
-            badgeDisplay = (
-              <div>
-                <Badges
-                  badges={this.state.badges}
-                  address={account}
-                  selectBadge={this.selectBadge.bind(this)}
-                />
-                <Ruler/>
-              </div>
-            )
-          }
-
-          const sendByScan = (
-            <SendByScan
-              parseAndCleanPath={this.parseAndCleanPath.bind(this)}
-              returnToState={this.returnToState.bind(this)}
-              returnState={this.state.returnState}
-              mainStyle={mainStyle}
-              goBack={this.goBack.bind(this)}
-              changeView={this.changeView}
-              onError={(error) =>{
-                this.changeAlert("danger",error)
-              }}
-            />
-          )
-
-          switch(view) {
-            case 'main':
-            return (
-              <div>
-                {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
-
-
-                  {extraTokens}
-
-                  <Balance icon={xdai} selected={selected} text={"pDai"} amount={this.state.xdaiBalance} address={account} dollarDisplay={dollarDisplay}/>
-                  <Ruler/>
-                  <Balance icon={dai} selected={selected} text={"DAI"} amount={this.state.daiBalance} address={account} dollarDisplay={dollarDisplay}/>
-                  <Ruler/>
-                  <Balance icon={eth} selected={selected} text={"ETH"} amount={parseFloat(this.state.ethBalance) * parseFloat(this.state.ethprice)} address={account} dollarDisplay={dollarDisplay}/>
-                  <Ruler/>
-                  {badgeDisplay}
-
-                  <MainCard
-                    subBalanceDisplay={subBalanceDisplay}
-                    buttonStyle={buttonStyle}
-                    address={account}
-                    balance={balance}
-                    changeAlert={this.changeAlert}
-                    changeView={this.changeView}
-                    dollarDisplay={dollarDisplay}
-                    ERC20TOKEN={ERC20TOKEN}
-                  />
-                  {moreButtons}
-                  <RecentTransactions
-                    dollarDisplay={dollarDisplay}
-                    view={this.state.view}
-                    buttonStyle={buttonStyle}
-                    ERC20TOKEN={ERC20TOKEN}
-                    transactionsByAddress={ERC20TOKEN?this.state.fullTransactionsByAddress:this.state.transactionsByAddress}
-                    changeView={this.changeView}
-                    address={account}
-                    block={this.state.block}
-                    recentTxs={ERC20TOKEN?this.state.fullRecentTxs:this.state.recentTxs}
-                  />
-                </div>
-                <Bottom
-                  icon={"wrench"}
-                  text={i18n.t('advance_title')}
-                  action={()=>{
-                    this.changeView('advanced')
-                  }}
-                />
-              </div>
-            );
-            case 'advanced':
-            return (
-              <div>
-                {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
-
-                  <NavCard title={i18n.t('advance_title')} goBack={this.goBack.bind(this)}/>
-                  <Advanced
-                    isVendor={this.state.isVendor && this.state.isVendor.isAllowed}
-                    buttonStyle={buttonStyle}
-                    address={account}
-                    balance={balance}
-                    changeView={this.changeView}
-                    privateKey={metaAccount.privateKey}
-                    changeAlert={this.changeAlert}
-                    goBack={this.goBack.bind(this)}
-                    setPossibleNewPrivateKey={this.setPossibleNewPrivateKey.bind(this)}
-                  />
-                </div>
-                <Bottom
-                  action={()=>{
-                    this.changeView('main')
-                  }}
-                />
-              </div>
-            )
-            case 'withdraw_from_private':
-
-
-              return (
+              let defaultBalanceDisplay = (
                 <div>
-                  {this.state.scannerOpen ? sendByScan : null}
-                  <div className="send-to-address card w-100" style={{zIndex:1}}>
-                    <NavCard title={i18n.t('withdraw')} goBack={this.goBack.bind(this)}/>
-                    {defaultBalanceDisplay}
-                    <WithdrawFromPrivate
-                      ERC20TOKEN={ERC20TOKEN}
-                      products={this.state.products}
-                      buttonStyle={buttonStyle}
-                      balance={balance}
+                  <Balance icon={xdai} selected={false} text={"MNY"} amount={this.state.xdaiBalance} address={account} dollarDisplay={dollarDisplay} />
+                  <Ruler/>
+                </div>
+              )
+
+              if(ERC20TOKEN){
+                selected = ERC20NAME
+                extraTokens = (
+                  <div>
+                    <Balance icon={ERC20IMAGE} selected={selected} text={"MNY"} amount={this.state.balance} address={account} dollarDisplay={dollarDisplay} />
+                    <Ruler/>
+                  </div>
+                )
+                defaultBalanceDisplay = extraTokens
+              }
+
+              if(view.indexOf("account_")==0)
+              {
+
+                let targetAddress = view.replace("account_","")
+                console.log("TARGET",targetAddress)
+                return (
+                  <div>
+                    <Card>
+
+                      <NavCard title={(
+                        <div>
+                          {i18n.t('history_chat')}
+                        </div>
+                      )} goBack={this.goBack.bind(this)}/>
+                      {defaultBalanceDisplay}
+                      <History
+                        buttonStyle={buttonStyle}
+                        saveKey={this.saveKey.bind(this)}
+                        metaAccount={this.state.metaAccount}
+                        transactionsByAddress={ERC20TOKEN?this.state.fullTransactionsByAddress:this.state.transactionsByAddress}
+                        address={account}
+                        balance={balance}
+                        changeAlert={this.changeAlert}
+                        changeView={this.changeView}
+                        target={targetAddress}
+                        block={this.state.block}
+                        send={this.state.send}
+                        web3={this.state.web3}
+                        goBack={this.goBack.bind(this)}
+                        dollarDisplay={dollarDisplay}
+                      />
+                    </Card>
+
+                    <Bottom
+                      action={()=>{
+                        this.changeView('main')
+                      }}
+                    />
+                  </div>
+
+                )
+              }
+
+              let badgeDisplay = ""
+              if(this.state.badgeBalance>0){
+                badgeDisplay = (
+                  <div>
+                    <Badges
+                      badges={this.state.badges}
                       address={account}
+                      selectBadge={this.selectBadge.bind(this)}
                       contracts={this.state.contracts}
-                      web3={web3}
+                      web3={this.state.web3}
+                      xdaiweb3={this.state.xdaiweb3}
+                      pdaiContract={this.state.pdaiContract}
+                      pDaiTokenAddr={P_DAI_TOKEN_ADDR}
+                      //amount={false}
+                      privateKey={this.state.withdrawFromPrivateKey}
+                      goBack={this.goBack.bind(this)}
+                      changeView={this.changeView}
+                      changeAlert={this.changeAlert}
+                      dollarDisplay={dollarDisplay}
+                      tokenSendV2={tokenSendV2.bind(this)}
+                      selectBadge={this.selectBadge.bind(this)}
+                      contracts={this.state.contracts}
+                      web3={this.state.web3}
+                      xdaiweb3={this.state.xdaiweb3}
                       //amount={false}
                       privateKey={this.state.withdrawFromPrivateKey}
                       goBack={this.goBack.bind(this)}
@@ -1477,678 +1470,802 @@ render() {
                       changeAlert={this.changeAlert}
                       dollarDisplay={dollarDisplay}
                     />
+                    <Ruler/>
                   </div>
-                  <Bottom
-                    action={()=>{
-                      this.changeView('main')
-                    }}
-                  />
-                </div>
-              );
-            case 'send_badge':
-            return (
-              <div>
-                {this.state.scannerOpen ? sendByScan : null}
-                <div className="send-to-address card w-100" style={{zIndex:1}}>
-                  <NavCard title={this.state.badges[this.state.selectedBadge].name} titleLink={this.state.badges[this.state.selectedBadge].external_url} goBack={this.goBack.bind(this)}/>
-                  <SendBadge
-                    changeView={this.changeView}
-                    ensLookup={this.ensLookup.bind(this)}
-                    ERC20TOKEN={ERC20TOKEN}
-                    buttonStyle={buttonStyle}
-                    balance={balance}
-                    web3={this.state.web3}
-                    contracts={this.state.contracts}
-                    address={account}
-                    scannerState={this.state.scannerState}
-                    tx={this.state.tx}
-                    goBack={this.goBack.bind(this)}
-                    openScanner={this.openScanner.bind(this)}
-                    setReceipt={this.setReceipt}
-                    changeAlert={this.changeAlert}
-                    dollarDisplay={dollarDisplay}
-                    badge={this.state.badges[this.state.selectedBadge]}
-                    clearBadges={this.clearBadges.bind(this)}
-                  />
-                </div>
-                <Bottom
-                  text={i18n.t('done')}
-                  action={this.goBack.bind(this)}
-                />
-              </div>
-            )
-            case 'send_to_address':
-            return (
-              <div>
-                {this.state.scannerOpen ? sendByScan : null}
-                <div className="send-to-address card w-100" style={{zIndex:1}}>
-                  <NavCard title={i18n.t('send_to_address_title')} goBack={this.goBack.bind(this)}/>
-                  {defaultBalanceDisplay}
-                  <SendToAddress
-                    convertToDollar={convertToDollar}
-                    dollarSymbol={dollarSymbol}
-                    parseAndCleanPath={this.parseAndCleanPath.bind(this)}
-                    openScanner={this.openScanner.bind(this)}
-                    scannerState={this.state.scannerState}
-                    ensLookup={this.ensLookup.bind(this)}
-                    ERC20TOKEN={ERC20TOKEN}
-                    buttonStyle={buttonStyle}
-                    balance={balance}
-                    web3={this.state.web3}
-                    address={account}
-                    send={send}
-                    goBack={this.goBack.bind(this)}
-                    changeView={this.changeView}
-                    setReceipt={this.setReceipt}
-                    changeAlert={this.changeAlert}
-                    dollarDisplay={dollarDisplay}
-                  />
-                </div>
-                <Bottom
-                  text={i18n.t('cancel')}
-                  action={this.goBack.bind(this)}
-                />
-              </div>
-            );
-            case 'receipt':
-            return (
-              <div>
-                {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
-
-                  <NavCard title={i18n.t('receipt_title')} goBack={this.goBack.bind(this)}/>
-                  <Receipt
-                    receipt={this.state.receipt}
-                    view={this.state.view}
-                    block={this.state.block}
-                    ensLookup={this.ensLookup.bind(this)}
-                    ERC20TOKEN={ERC20TOKEN}
-                    buttonStyle={buttonStyle}
-                    balance={balance}
-                    web3={this.state.web3}
-                    address={account}
-                    send={send}
-                    goBack={this.goBack.bind(this)}
-                    changeView={this.changeView}
-                    changeAlert={this.changeAlert}
-                    dollarDisplay={dollarDisplay}
-                    transactionsByAddress={this.state.transactionsByAddress}
-                    fullTransactionsByAddress={this.state.fullTransactionsByAddress}
-                    fullRecentTxs={this.state.fullRecentTxs}
-                    recentTxs={this.state.recentTxs}
-                  />
-                </div>
-                <Bottom
-                  action={this.goBack.bind(this)}
-                />
-              </div>
-            );
-            case 'receive':
-            return (
-              <div>
-                {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
-
-                  <NavCard title={i18n.t('receive_title')} goBack={this.goBack.bind(this)}/>
-                  {defaultBalanceDisplay}
-                  <Receive
-                    dollarDisplay={dollarDisplay}
-                    view={this.state.view}
-                    block={this.state.block}
-                    ensLookup={this.ensLookup.bind(this)}
-                    ERC20TOKEN={ERC20TOKEN}
-                    buttonStyle={buttonStyle}
-                    balance={balance}
-                    web3={this.state.web3}
-                    address={account}
-                    send={send}
-                    goBack={this.goBack.bind(this)}
-                    changeView={this.changeView}
-                    changeAlert={this.changeAlert}
-                    dollarDisplay={dollarDisplay}
-                    transactionsByAddress={this.state.transactionsByAddress}
-                    fullTransactionsByAddress={this.state.fullTransactionsByAddress}
-                    fullRecentTxs={this.state.fullRecentTxs}
-                    recentTxs={this.state.recentTxs}
-                  />
-                </div>
-                <Bottom
-                  action={this.goBack.bind(this)}
-                />
-              </div>
-            );
-            case 'request_funds':
-            return (
-              <div>
-                {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
-
-                  <NavCard title={i18n.t('request_funds_title')} goBack={this.goBack.bind(this)}/>
-                  {defaultBalanceDisplay}
-                  <RequestFunds
-                    view={this.state.view}
-                    mainStyle={mainStyle}
-                    buttonStyle={buttonStyle}
-                    balance={balance}
-                    address={account}
-                    send={send}
-                    goBack={this.goBack.bind(this)}
-                    changeView={this.changeView}
-                    changeAlert={this.changeAlert}
-                    dollarDisplay={dollarDisplay}
-                    dollarSymbol={dollarSymbol}
-                    transactionsByAddress={this.state.transactionsByAddress}
-                    fullTransactionsByAddress={this.state.fullTransactionsByAddress}
-                    fullRecentTxs={this.state.fullRecentTxs}
-                    recentTxs={this.state.recentTxs}
-                  />
-                </div>
-                <Bottom
-                  action={this.goBack.bind(this)}
-                />
-              </div>
-            );
-            case 'share':
-
-              let url = window.location.protocol+"//"+window.location.hostname
-              if(window.location.port&&window.location.port!=80&&window.location.port!=443){
-                url = url+":"+window.location.port
+                );
               }
+              const sendByScan = (
+                <SendByScan
+                  parseAndCleanPath={this.parseAndCleanPath.bind(this)}
+                  returnToState={this.returnToState.bind(this)}
+                  returnState={this.state.returnState}
+                  mainStyle={mainStyle}
+                  goBack={this.goBack.bind(this)}
+                  changeView={this.changeView}
+                  onError={(error) =>{
+                    this.changeAlert("danger",error)
+                  }}
+                />
+              )
+  
+              switch(view) {
+                case 'main':
+                return (
+                  <div>
+                    {this.state.scannerOpen ? sendByScan : null}
+                    <Card p={3}>
+                      {extraTokens}
 
-              return (
-                <div>
-                  {this.state.scannerOpen ? sendByScan : null}
-                  <div className="main-card card w-100" style={{zIndex:1}}>
+                      <Balance icon={xdai} selected={selected} text={"MNY"} amount={this.state.xdaiBalance} address={account} dollarDisplay={dollarDisplay}/>
 
-                    <NavCard title={url} goBack={this.goBack.bind(this)} />
-                    <Share
-                      title={url}
-                      url={url}
-                      mainStyle={mainStyle}
-                      sendKey={this.state.sendKey}
-                      sendLink={this.state.sendLink}
-                      balance={balance}
-                      address={account}
-                      changeAlert={this.changeAlert}
-                      goBack={this.goBack.bind(this)}
+                      <Balance icon={dai} selected={selected} text={"DAI"} amount={this.state.daiBalance} address={account} dollarDisplay={dollarDisplay}/>
+
+                      <Balance icon={eth} selected={selected} text={"ETH"} amount={parseFloat(this.state.ethBalance) * parseFloat(this.state.ethprice)} address={account} dollarDisplay={dollarDisplay}/>
+
+                      {badgeDisplay}
+
+                      <MainCard
+                        subBalanceDisplay={subBalanceDisplay}
+                        buttonStyle={buttonStyle}
+                        address={account}
+                        balance={balance}
+                        changeAlert={this.changeAlert}
+                        changeView={this.changeView}
+                        dollarDisplay={dollarDisplay}
+                        ERC20TOKEN={ERC20TOKEN}
+                      />
+                      
+                      <Box>
+                        {moreButtons}
+                      </Box>
+
+                      <RecentTransactions
+                        dollarDisplay={dollarDisplay}
+                        view={this.state.view}
+                        buttonStyle={buttonStyle}
+                        ERC20TOKEN={ERC20TOKEN}
+                        transactionsByAddress={ERC20TOKEN?this.state.fullTransactionsByAddress:this.state.transactionsByAddress}
+                        changeView={this.changeView}
+                        address={account}
+                        block={this.state.block}
+                        recentTxs={ERC20TOKEN?this.state.fullRecentTxs:this.state.recentTxs}
+                      />
+
+                    </Card>
+                    <Bottom
+                      icon={"Settings"}
+                      text={i18n.t('advance_title')}
+                      action={()=>{
+                        this.changeView('advanced')
+                      }}
                     />
                   </div>
-                  <Bottom
-                    action={this.goBack.bind(this)}
-                  />
-                </div>
-              );
-            case 'share-link':
-              return (
-                <div>
-                  {this.state.scannerOpen ? sendByScan : null}
-                  <div className="main-card card w-100" style={{zIndex:1}}>
-
-                    <NavCard title={'Share Link'} goBack={this.goBack.bind(this)} />
-                      <ShareLink
-                        sendKey={this.state.sendKey}
-                        sendLink={this.state.sendLink}
-                        balance={balance}
+                );
+                case 'advanced':
+                return (
+                  <div>
+                    {this.state.scannerOpen ? sendByScan : null}
+                    <Card p={3}>
+                      <NavCard title={i18n.t('advance_title')} goBack={this.goBack.bind(this)}/>
+                      <Advanced
+                        isVendor={this.state.isVendor && this.state.isVendor.isAllowed}
+                        buttonStyle={buttonStyle}
                         address={account}
+                        balance={balance}
+                        changeView={this.changeView}
+                        privateKey={metaAccount.privateKey}
                         changeAlert={this.changeAlert}
+                        dollarDisplay={dollarDisplay}
+                        badge={this.state.badges[this.state.selectedBadge]}
+                        clearBadges={this.clearBadges.bind(this)}
+                      />
+                    </Card>
+                    <Bottom
+                      text={i18n.t('done')}
+                      action={this.goBack.bind(this)}
+                    />
+                  </div>
+                )
+                case 'withdraw_from_private':
+                  return (
+                    <div>
+                      {this.state.scannerOpen ? sendByScan : null}
+                      <Card p={3} style={{zIndex:1}}>
+                        <NavCard title={i18n.t('withdraw')} goBack={this.goBack.bind(this)}/>
+                        {defaultBalanceDisplay}
+                        <WithdrawFromPrivate
+                          ERC20TOKEN={ERC20TOKEN}
+                          products={this.state.products}
+                          buttonStyle={buttonStyle}
+                          balance={balance}
+                          address={account}
+                          contracts={this.state.contracts}
+                          web3={this.state.web3}
+                          xdaiweb3={this.state.xdaiweb3}
+                          pdaiContract={this.state.pdaiContract}
+                          pDaiTokenAddr={P_DAI_TOKEN_ADDR}
+                          //amount={false}
+                          privateKey={this.state.withdrawFromPrivateKey}
+                          goBack={this.goBack.bind(this)}
+                          changeView={this.changeView}
+                          changeAlert={this.changeAlert}
+                          dollarDisplay={dollarDisplay}
+                          tokenSendV2={tokenSendV2.bind(this)}
+                        />
+                      </Card>
+                      <Bottom
+                        action={()=>{
+                          this.changeView('main')
+                        }}
+                      />
+                    </div>
+                  );
+                case 'send_badge':
+                return (
+                  <div>
+                    {this.state.scannerOpen ? sendByScan : null}
+                    <Card p={3} style={{zIndex:1}}>
+                      <NavCard title={this.state.badges[this.state.selectedBadge].name} titleLink={this.state.badges[this.state.selectedBadge].external_url} goBack={this.goBack.bind(this)}/>
+                      <SendBadge
+                        changeView={this.changeView}
+                        ensLookup={this.ensLookup.bind(this)}
+                        ERC20TOKEN={ERC20TOKEN}
+                        buttonStyle={buttonStyle}
+                        balance={balance}
+                        web3={this.state.web3}
+                        contracts={this.state.contracts}
+                        address={account}
+                        scannerState={this.state.scannerState}
+                        tx={this.state.tx}
                         goBack={this.goBack.bind(this)}
+                        openScanner={this.openScanner.bind(this)}
+                        setReceipt={this.setReceipt}
+                        changeAlert={this.changeAlert}
+                        dollarDisplay={dollarDisplay}
+                        badge={this.state.badges[this.state.selectedBadge]}
+                        clearBadges={this.clearBadges.bind(this)}
+                      />
+                    </Card>
+                    <Bottom
+                      text={i18n.t('done')}
+                      action={this.goBack.bind(this)}
+                    />
+                  </div>
+                )
+                case 'send_to_address':
+                return (
+                  <div>
+                    {this.state.scannerOpen ? sendByScan : null}
+                    <Card p={3} style={{zIndex:1}}>
+                      <NavCard title={i18n.t('send_to_address_title')} goBack={this.goBack.bind(this)}/>
+                      {defaultBalanceDisplay}
+                      <SendToAddress
+                        parseAndCleanPath={this.parseAndCleanPath.bind(this)}
+                        openScanner={this.openScanner.bind(this)}
+                        scannerState={this.state.scannerState}
+                        ensLookup={this.ensLookup.bind(this)}
+                        ERC20TOKEN={ERC20TOKEN}
+                        buttonStyle={buttonStyle}
+                        balance={balance}
+                        web3={this.state.web3}
+                        address={account}
+                        send={send}
+                        goBack={this.goBack.bind(this)}
+                        changeView={this.changeView}
+                        setReceipt={this.setReceipt}
+                        changeAlert={this.changeAlert}
+                        dollarDisplay={dollarDisplay}
+                        convertToDollar={convertToDollar}
+                        pDaiTokenAddr={P_DAI_TOKEN_ADDR}
+                      />
+                    </Card>
+                    <Bottom
+                      text={i18n.t('cancel')}
+                      action={this.goBack.bind(this)}
+                    />
+                  </div>
+                );
+                case 'receipt':
+                return (
+                  <div>
+                    {this.state.scannerOpen ? sendByScan : null}
+                    <Card p={3}>
+                      <NavCard title={i18n.t('receipt_title')} goBack={this.goBack.bind(this)}/>
+                      <Receipt
+                        receipt={this.state.receipt}
+                        view={this.state.view}
+                        block={this.state.block}
+                        ensLookup={this.ensLookup.bind(this)}
+                        ERC20TOKEN={ERC20TOKEN}
+                        buttonStyle={buttonStyle}
+                        balance={balance}
+                        web3={this.state.web3}
+                        address={account}
+                        send={send}
+                        goBack={this.goBack.bind(this)}
+                        changeView={this.changeView}
+                        changeAlert={this.changeAlert}
+                        dollarDisplay={dollarDisplay}
+                        transactionsByAddress={this.state.transactionsByAddress}
+                        fullTransactionsByAddress={this.state.fullTransactionsByAddress}
+                        fullRecentTxs={this.state.fullRecentTxs}
+                        recentTxs={this.state.recentTxs}
+                      />
+                    </Card>
+                    <Bottom
+                      action={this.goBack.bind(this)}
+                    />
+                  </div>
+                );
+                case 'receive':
+                return (
+                  <div>
+                    {this.state.scannerOpen ? sendByScan : null}
+                    <Card p={3}>
+                      <NavCard title={i18n.t('receive_title')} goBack={this.goBack.bind(this)}/>
+                      {defaultBalanceDisplay}
+                      <Receive
+                        view={this.state.view}
+                        block={this.state.block}
+                        ensLookup={this.ensLookup.bind(this)}
+                        ERC20TOKEN={ERC20TOKEN}
+                        buttonStyle={buttonStyle}
+                        balance={balance}
+                        web3={this.state.web3}
+                        address={account}
+                        send={send}
+                        goBack={this.goBack.bind(this)}
+                        changeView={this.changeView}
+                        changeAlert={this.changeAlert}
+                        dollarDisplay={dollarDisplay}
+                        transactionsByAddress={this.state.transactionsByAddress}
+                        fullTransactionsByAddress={this.state.fullTransactionsByAddress}
+                        fullRecentTxs={this.state.fullRecentTxs}
+                        recentTxs={this.state.recentTxs}
+                      />
+                    </Card>
+                    <Bottom
+                      action={this.goBack.bind(this)}
+                    />
+                  </div>
+                );
+                  case 'request_funds':
+                  return (
+                    <div>
+                      {this.state.scannerOpen ? sendByScan : null}
+                      <Card p={3}>
+                        <NavCard title={i18n.t('request_funds_title')} goBack={this.goBack.bind(this)}/>
+                        {defaultBalanceDisplay}
+                        <RequestFunds
+                          view={this.state.view}
+                          mainStyle={mainStyle}
+                          buttonStyle={buttonStyle}
+                          balance={balance}
+                          address={account}
+                          send={send}
+                          goBack={this.goBack.bind(this)}
+                          changeView={this.changeView}
+                          changeAlert={this.changeAlert}
+                          dollarDisplay={dollarDisplay}
+                          transactionsByAddress={this.state.transactionsByAddress}
+                          fullTransactionsByAddress={this.state.fullTransactionsByAddress}
+                          fullRecentTxs={this.state.fullRecentTxs}
+                          recentTxs={this.state.recentTxs}
+                        />
+                      </Card>
+                      <Bottom
+                        action={()=>{
+                          this.changeView('main')
+                        }}
+                      />
+                    </div>
+                  );
+                  case 'share':
+  
+                    let url = window.location.protocol+"//"+window.location.hostname
+                    if(window.location.port&&window.location.port!=80&&window.location.port!=443){
+                      url = url+":"+window.location.port
+                    }
+  
+                    return (
+                      <div>
+                        {this.state.scannerOpen ? sendByScan : null}
+                        <Card p={3}>
+                          <NavCard title={url} goBack={this.goBack.bind(this)} />
+                          <Share
+                            title={url}
+                            url={url}
+                            mainStyle={mainStyle}
+                            sendKey={this.state.sendKey}
+                            sendLink={this.state.sendLink}
+                            balance={balance}
+                            address={account}
+                            contracts={this.state.contracts}
+                            web3={web3}
+                            //amount={false}
+                            privateKey={this.state.withdrawFromPrivateKey}
+                            goBack={this.goBack.bind(this)}
+                            changeView={this.changeView}
+                            changeAlert={this.changeAlert}
+                            dollarDisplay={dollarDisplay}
+                          />
+                        </Card>
+                        <Bottom
+                          action={this.goBack.bind(this)}
+                        />
+                      </div>
+                    );
+                  case 'share-link':
+                    return (
+                      <div>
+                        {this.state.scannerOpen ? sendByScan : null}
+                        <Card p={3}>
+                          <NavCard title={'Share Link'} goBack={this.goBack.bind(this)} />
+                            <ShareLink
+                              sendKey={this.state.sendKey}
+                              sendLink={this.state.sendLink}
+                              balance={balance}
+                              address={account}
+                              changeAlert={this.changeAlert}
+                              goBack={this.goBack.bind(this)}
+                            />
+                        </Card>
+                        <Bottom
+                          action={this.goBack.bind(this)}
+                        />
+                      </div>
+                    );
+                  case 'send_with_link':
+                  return (
+                    <div>
+                      {this.state.scannerOpen ? sendByScan : null}
+                      <Card p={3}>
+                        <NavCard title={'Send with Link'} goBack={this.goBack.bind(this)} />
+                        {defaultBalanceDisplay}
+                        <SendWithLink balance={balance}
+                          buttonStyle={buttonStyle}
+                          changeAlert={this.changeAlert}
+                          sendWithLink={(amount,cb)=>{
+                            let randomHash = this.state.web3.utils.sha3(""+Math.random())
+                            let randomWallet = this.state.web3.eth.accounts.create()
+                            let sig = this.state.web3.eth.accounts.sign(randomHash, randomWallet.privateKey);
+                            console.log("STATE",this.state,this.state.contracts)
+                            this.state.tx(this.state.contracts.Links.send(randomHash,sig.signature,0,amount*10**18,7),250000,false,amount*10**18,async (receipt)=>{
+                              this.setState({sendLink: randomHash,sendKey: randomWallet.privateKey},()=>{
+                                console.log("STATE SAVED",this.state)
+                              })
+                              cb(receipt)
+                            })
+                          }}
+                          address={account}
+                          changeView={this.changeView}
+                          goBack={this.goBack.bind(this)}
+                          dollarDisplay={dollarDisplay}
+                          convertToDollar={convertToDollar}
+                        />
+                      </Card>
+                      <Bottom
+                        text={i18n.t('cancel')}
+                        action={this.goBack.bind(this)}
+                      />
+                    </div>
+                  );
+                  case 'burn-wallet':
+                  return (
+                    <div>
+                      {this.state.scannerOpen ? sendByScan : null}
+                      <Card p={3}>
+                        <NavCard title={"Burn Private Key"} goBack={this.goBack.bind(this)}/>
+                        {defaultBalanceDisplay}
+                        <BurnWallet
+                        mainStyle={mainStyle}
+                        address={account}
+                        balance={balance}
+                        goBack={this.goBack.bind(this)}
+                        dollarDisplay={dollarDisplay}
+                        burnWallet={()=>{
+                          burnMetaAccount()
+                          if(RNMessageChannel){
+                            RNMessageChannel.send("burn")
+                          }
+                          if(localStorage&&typeof localStorage.setItem == "function"){
+                            localStorage.setItem(this.state.account+"loadedBlocksTop","")
+                            localStorage.setItem(this.state.account+"metaPrivateKey","")
+                            localStorage.setItem(this.state.account+"recentTxs","")
+                            localStorage.setItem(this.state.account+"transactionsByAddress","")
+                            this.setState({recentTxs:[],transactionsByAddress:{}})
+                          }
+                        }}
+                        />
+                      </Card>
+                      <Bottom
+                        text={i18n.t('cancel')}
+                        action={this.goBack.bind(this)}
                       />
                   </div>
-                  <Bottom
-                    action={this.goBack.bind(this)}
-                  />
-                </div>
-              );
-            case 'send_with_link':
-            return (
-              <div>
-                {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
+                );
 
-                  <NavCard title={'Send with Link'} goBack={this.goBack.bind(this)} />
-                  {defaultBalanceDisplay}
-                  <SendWithLink balance={balance}
-                    buttonStyle={buttonStyle}
-                    changeAlert={this.changeAlert}
-                    sendWithLink={(amount,cb)=>{
-                      let randomHash = this.state.web3.utils.sha3(""+Math.random())
-                      let randomWallet = this.state.web3.eth.accounts.create()
-                      let sig = this.state.web3.eth.accounts.sign(randomHash, randomWallet.privateKey);
-                      console.log("STATE",this.state,this.state.contracts)
-                      // Use xDai as default token
-                      const tokenAddress = ERC20TOKEN === false ? 0 : this.state.contracts[ERC20TOKEN]._address;
-                      // -- Temp hacks
-                      const expirationTime = 365; // Hard-coded to 1 year link expiration. 
-                      const amountToSend = amount*10**18 ; // Conversion to wei
-                      // --
-                      if(!ERC20TOKEN)
-                      {
-                        this.state.tx(this.state.contracts.Links.send(randomHash,sig.signature,tokenAddress,amountToSend,expirationTime),250000,false,amountToSend,async (receipt)=>{
-                          this.setState({sendLink: randomHash,sendKey: randomWallet.privateKey},()=>{
-                            console.log("STATE SAVED",this.state)
-                          })
-                          cb(receipt)
-                        })
-                      } else{
-                        this.state.tx(this.state.contracts[ERC20TOKEN].approve(this.state.contracts.Links._address, amountToSend),21000,false,0,async (approveReceipt)=>{
-                          //cb(approveReceipt)
-                          this.state.tx(this.state.contracts.Links.send(randomHash,sig.signature,tokenAddress,amountToSend,expirationTime),250000,false,amountToSend,async (sendReceipt)=>{
-                            this.setState({sendLink: randomHash,sendKey: randomWallet.privateKey},()=>{
-                              console.log("STATE SAVED",this.state)
-                            })
-                            cb(sendReceipt)
-                          })
-                        })
-                      }
-                    }}
-                    address={account}
-                    changeView={this.changeView}
-                    goBack={this.goBack.bind(this)}
-                    dollarDisplay={dollarDisplay}
-                    convertToDollar={convertToDollar}
-                    dollarSymbol={dollarSymbol}
-                  />
-                </div>
-                <Bottom
-                  text={i18n.t('cancel')}
-                  action={this.goBack.bind(this)}
-                />
-              </div>
-            );
-            case 'burn-wallet':
-            return (
-              <div>
-                {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
+                case 'exchange':
+                return (
+                  <div>
+                    {this.state.scannerOpen ? sendByScan : null}
+                    <Card>
 
-                  <NavCard title={"Burn Private Key"} goBack={this.goBack.bind(this)}/>
-                  {defaultBalanceDisplay}
-                  <BurnWallet
-                  mainStyle={mainStyle}
-                  address={account}
-                  balance={balance}
-                  goBack={this.goBack.bind(this)}
-                  dollarDisplay={dollarDisplay}
-                  burnWallet={()=>{
-                    burnMetaAccount()
-                    if(RNMessageChannel){
-                      RNMessageChannel.send("burn")
-                    }
-                    if(localStorage&&typeof localStorage.setItem == "function"){
-                      localStorage.setItem(this.state.account+"loadedBlocksTop","")
-                      localStorage.setItem(this.state.account+"metaPrivateKey","")
-                      localStorage.setItem(this.state.account+"recentTxs","")
-                      localStorage.setItem(this.state.account+"transactionsByAddress","")
-                      this.setState({recentTxs:[],transactionsByAddress:{}})
-                    }
-                  }}
-                  />
-                </div>
-                <Bottom
-                  text={i18n.t('cancel')}
-                  action={this.goBack.bind(this)}
-                />
-              </div>
-            );
-            case 'cash_out':
-            return (
-              <div>
-                {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
-
-                  <NavCard title={"Cash Out"} goBack={this.goBack.bind(this)}/>
-                  {defaultBalanceDisplay}
-                  <CashOut
-                    buttonStyle={buttonStyle}
-                    changeView={this.changeView}
-                    address={account}
-                    balance={balance}
-                    goBack={this.goBack.bind(this)}
-                    dollarDisplay={dollarDisplay}
-                  />
-                </div>
-                <Bottom
-                  action={this.goBack.bind(this)}
-                />
-              </div>
-            );
-
-            case 'exchange':
-            return (
-              <div>
-                {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
-
-                  <NavCard title={i18n.t('exchange_title')} goBack={this.goBack.bind(this)}/>
-                  <Exchange
-                    eth={eth}
-                    dai={dai}
-                    xdai={xdai}
-                    ERC20NAME={ERC20NAME}
-                    ERC20IMAGE={ERC20IMAGE}
-                    ERC20TOKEN={ERC20TOKEN}
-                    ERC20VENDOR={ERC20VENDOR}
-                    ethprice={this.state.ethprice}
-                    ethBalance={this.state.ethBalance}
-                    daiBalance={this.state.daiBalance}
-                    xdaiBalance={this.state.xdaiBalance}
-                    mainnetweb3={this.state.mainnetweb3}
-                    xdaiweb3={this.state.xdaiweb3}
-                    daiContract={this.state.daiContract}
-                    ensContract={this.state.ensContract}
-                    bridgeContract={this.state.bridgeContract}
-                    isVendor={this.state.isVendor}
-                    isAdmin={this.state.isAdmin}
-                    contracts={this.state.contracts}
-                    buttonStyle={buttonStyle}
-                    changeAlert={this.changeAlert}
-                    setGwei={this.setGwei}
-                    network={this.state.network}
-                    tx={this.state.tx}
-                    pTx={this.state.pTx}
-                    web3={this.state.web3}
-                    send={this.state.send}
-                    nativeSend={this.state.nativeSend}
-                    address={account}
-                    balance={balance}
-                    goBack={this.goBack.bind(this)}
-                    dollarDisplay={dollarDisplay}
-                  />
-                </div>
-                <Bottom
-                  action={this.goBack.bind(this)}
-                />
-              </div>
-            );
-            case 'vendors':
-            return (
-              <div>
-                {this.state.scannerOpen ? sendByScan : null}
-                <div className="main-card card w-100" style={{zIndex:1}}>
-
-                  <NavCard title={i18n.t('vendors')} goBack={this.goBack.bind(this)}/>
-                  <Vendors
-                    ERC20VENDOR={ERC20VENDOR}
-                    products={this.state.products}
-                    vendorObject={this.state.vendorObject}
-                    vendors={this.state.vendors}
-                    address={account}
-                    mainStyle={mainStyle}
-                    changeView={this.changeView}
-                    contracts={this.state.contracts}
-                    vendor={this.state.isVendor}
-                    tx={this.state.tx}
-                    web3={this.state.web3}
-                    block={this.state.block}
-                    goBack={this.goBack.bind(this)}
-                    dollarDisplay={dollarDisplay}
-                  />
-                </div>
-                <Bottom
-                  action={this.goBack.bind(this)}
-                />
-              </div>
-            );
-            case 'loader':
-            return (
-              <div>
-                <div style={{zIndex:1,position:"relative",color:"#dddddd"}}>
-
-                  <NavCard title={"Sending..."} goBack={this.goBack.bind(this)} darkMode={true}/>
-                </div>
-                <Loader loaderImage={LOADERIMAGE} mainStyle={mainStyle}/>
-              </div>
-            );
-            case 'reader':
-            return (
-              <div>
-                <div style={{zIndex:1,position:"relative",color:"#dddddd"}}>
-
-                  <NavCard title={"Reading QRCode..."} goBack={this.goBack.bind(this)} darkMode={true}/>
-                </div>
-                <Loader loaderImage={LOADERIMAGE}  mainStyle={mainStyle}/>
-              </div>
-            );
-            case 'claimer':
-            return (
-              <div>
-                <div style={{zIndex:1,position:"relative",color:"#dddddd"}}>
-
-                  <NavCard title={"Claiming..."} goBack={this.goBack.bind(this)} darkMode={true}/>
-                </div>
+                      <NavCard title={i18n.t('exchange_title')} goBack={this.goBack.bind(this)}/>
+                      <Exchange
+                        eth={eth}
+                        dai={dai}
+                        xdai={xdai}
+                        ERC20NAME={ERC20NAME}
+                        ERC20IMAGE={ERC20IMAGE}
+                        ERC20TOKEN={ERC20TOKEN}
+                        ERC20VENDOR={ERC20VENDOR}
+                        ethprice={this.state.ethprice}
+                        ethBalance={this.state.ethBalance}
+                        daiBalance={this.state.daiBalance}
+                        xdaiBalance={this.state.xdaiBalance}
+                        mainnetweb3={this.state.mainnetweb3}
+                        xdaiweb3={this.state.xdaiweb3}
+                        daiContract={this.state.daiContract}
+                        pdaiContract={this.state.pdaiContract}
+                        ensContract={this.state.ensContract}
+                        bridgeContract={this.state.bridgeContract}
+                        isVendor={this.state.isVendor}
+                        isAdmin={this.state.isAdmin}
+                        contracts={this.state.contracts}
+                        buttonStyle={buttonStyle}
+                        changeAlert={this.changeAlert}
+                        setGwei={this.setGwei}
+                        network={this.state.network}
+                        tx={this.state.tx}
+                        pTx={this.state.pTx}
+                        web3={this.state.web3}
+                        send={this.state.send}
+                        nativeSend={this.state.nativeSend}
+                        address={account}
+                        balance={balance}
+                        goBack={this.goBack.bind(this)}
+                        dollarDisplay={dollarDisplay}
+                        tokenSendV2={tokenSendV2.bind(this)}
+                        marketMaker={MARKET_MAKER}
+                      />
+                    </Card>
+                  </div>
+                );
+  
+                case 'vendors':
+                return (
+                  <div>
+                    {this.state.scannerOpen ? sendByScan : null}
+                    <Card>
+  
+                      <NavCard title={i18n.t('vendors')} goBack={this.goBack.bind(this)}/>
+                      <Vendors
+                        ERC20VENDOR={ERC20VENDOR}
+                        products={this.state.products}
+                        vendorObject={this.state.vendorObject}
+                        vendors={this.state.vendors}
+                        address={account}
+                        mainStyle={mainStyle}
+                        changeView={this.changeView}
+                        contracts={this.state.contracts}
+                        vendor={this.state.isVendor}
+                        tx={this.state.tx}
+                        web3={this.state.web3}
+                        block={this.state.block}
+                        goBack={this.goBack.bind(this)}
+                        dollarDisplay={dollarDisplay}
+                      />
+                    </Card>
+                    <Bottom
+                      action={this.goBack.bind(this)}
+                    />
+                  </div>
+                );
+                case 'loader':
+                return (
+                  <div>
+                    <div style={{zIndex:1,position:"relative",color:"#dddddd"}}>
+  
+                      <NavCard title={"Sending..."} goBack={this.goBack.bind(this)} darkMode={true}/>
+                    </div>
+                    <Loader loaderImage={LOADERIMAGE} mainStyle={mainStyle}/>
+                  </div>
+                );
+                case 'reader':
+                return (
+                  <div>
+                    <div style={{zIndex:1,position:"relative",color:"#dddddd"}}>
+                      <NavCard title={"Reading QRCode..."} goBack={this.goBack.bind(this)} darkMode={true}/>
+                    </div>
+                    <Loader loaderImage={LOADERIMAGE}  mainStyle={mainStyle}/>
+                  </div>
+                );
+                case 'claimer':
+                return (
+                  <div>
+                    <div style={{zIndex:1,position:"relative",color:"#dddddd"}}>
+                      <NavCard title={"Claiming..."} goBack={this.goBack.bind(this)} darkMode={true}/>
+                    </div>
+                  <Loader loaderImage={LOADERIMAGE} mainStyle={mainStyle}/>
+                  </div>
+                );
+                case 'mint':
+                return (
+                  <div>
+                    {this.state.scannerOpen ? sendByScan : null}
+                    <div className="send-to-address card w-100" style={{zIndex:1}}>
+                      <NavCard title={i18n.t('mint.title')} goBack={this.goBack.bind(this)}/>
+                      <RegisterMovie
+                        mainnetweb3={this.state.mainnetweb3}
+                        ERC721Full={this.state.contracts.ERC721Full}
+                        scannerState={this.state.scannerState}
+                        openScanner={this.openScanner.bind(this)}
+                        buttonStyle={buttonStyle}
+                        web3={this.state.web3}
+                        address={account}
+                        goBack={this.goBack.bind(this)}
+                        changeView={this.changeView}
+                        changeAlert={this.changeAlert}
+                        pTx={this.state.pTx}
+                        setReceipt={this.setReceipt}
+                      />
+                    </div>
+                    <Bottom
+                      text={i18n.t('cancel')}
+                      action={this.goBack.bind(this)}
+                    />
+                  </div>
+                );
+                default:
+                return (
+                  <div>unknown view</div>
+                )
+                }
+          })()}
+          { ( false ||  !web3 /*|| !this.checkNetwork() */) &&
+            <div>
               <Loader loaderImage={LOADERIMAGE} mainStyle={mainStyle}/>
-              </div>
-            );
-            case 'mint':
-            return (
-              <div>
-                {this.state.scannerOpen ? sendByScan : null}
-                <div className="send-to-address card w-100" style={{zIndex:1}}>
-                  <NavCard title={i18n.t('mint.title')} goBack={this.goBack.bind(this)}/>
-                  <RegisterMovie
-                    mainnetweb3={this.state.mainnetweb3}
-                    ERC721Full={this.state.contracts.ERC721Full}
-                    openScanner={this.openScanner.bind(this)}
-                    scannerState={this.state.scannerState}
-                    buttonStyle={buttonStyle}
-                    web3={this.state.web3}
-                    address={account}
-                    goBack={this.goBack.bind(this)}
-                    changeView={this.changeView}
-                    changeAlert={this.changeAlert}
-                    pTx={this.state.pTx}
-                    setReceipt={this.setReceipt}
-                  />
-                </div>
-                <Bottom
-                  text={i18n.t('cancel')}
-                  action={this.goBack.bind(this)}
-                />
-              </div>
-            );
-            default:
-            return (
-              <div>unknown view</div>
-            )
+            </div>
           }
-
-        })()}
-        { ( false ||  !web3 /*|| !this.checkNetwork() */) &&
-          <div>
-            <Loader loaderImage={LOADERIMAGE} mainStyle={mainStyle}/>
+          { alert && <Footer alert={alert} changeAlert={this.changeAlert}/> }
           </div>
-        }
-        { alert && <Footer alert={alert} changeAlert={this.changeAlert}/> }
-        </div>
-
-
-
-        <Dapparatus
-        config={{
-          DEBUG: false,
-          hide: true,
-          requiredNetwork: ['Unknown', 'xDai'],
-          metatxAccountGenerator: false,
-        }}
-        //used to pass a private key into Dapparatus
-        newPrivateKey={this.state.newPrivateKey}
-        fallbackWeb3Provider={WEB3_PROVIDER}
-        network="LeapTestnet"
-        leapProvider={XDAI_PROVIDER}
-        onUpdate={async (state) => {
-          //console.log("DAPPARATUS UPDATE",state)
-          if(ERC20TOKEN){
-            delete state.balance
-          }
-          if (state.web3Provider) {
-            state.web3 = new Web3(state.web3Provider)
-            this.setState(state,()=>{
-              //console.log("state set:",this.state)
-              if(this.state.possibleNewPrivateKey){
-                this.dealWithPossibleNewPrivateKey()
-              }
-              if(!this.state.parsingTheChain){
-                this.setState({parsingTheChain:true},async ()=>{
-                  let upperBoundOfSearch = this.state.block
-                  //parse through recent transactions and store in local storage
-
-                  if(localStorage&&typeof localStorage.setItem == "function"){
-
-                    let initResult = this.initRecentTxs()
-                    let recentTxs = initResult[0]
-                    let transactionsByAddress = initResult[1]
-
-                    let loadedBlocksTop = this.state.loadedBlocksTop
-                    if(!loadedBlocksTop){
-                      loadedBlocksTop = localStorage.getItem(this.state.account+"loadedBlocksTop")
-                    }
-
-                    //  Look back through previous blocks since this account
-                    //  was last online... this could be bad. We might need a
-                    //  central server keeping track of all these and delivering
-                    //  a list of recent transactions
-
-
-                    let updatedTxs = false
-                    if(!loadedBlocksTop || loadedBlocksTop<this.state.block){
-                      if(!loadedBlocksTop) loadedBlocksTop = Math.max(2,this.state.block-5)
-
-                      if(this.state.block - loadedBlocksTop > MAX_BLOCK_TO_LOOK_BACK){
-                        loadedBlocksTop = this.state.block-MAX_BLOCK_TO_LOOK_BACK
-                      }
-
-                      let paddedLoadedBlocks = parseInt(loadedBlocksTop)+BLOCKS_TO_PARSE_PER_BLOCKTIME
-                      //console.log("choosing the min of ",paddedLoadedBlocks,"and",this.state.block)
-                      let parseBlock=Math.min(paddedLoadedBlocks,this.state.block)
-
-                      //console.log("MIN:",parseBlock)
-                      upperBoundOfSearch = parseBlock
-                      console.log(" +++++++======= Parsing recent blocks ~"+this.state.block)
-                      //first, if we are still back parsing, we need to look at *this* block too
-                      if(upperBoundOfSearch<this.state.block){
-                        for(let b=this.state.block;b>this.state.block-6;b--){
-                          //console.log(" ++ Parsing *CURRENT BLOCK* Block "+b+" for transactions...")
-                          updatedTxs = (await this.parseBlocks(b,recentTxs,transactionsByAddress)) || updatedTxs
-                        }
-                      }
-                      console.log(" +++++++======= Parsing from "+loadedBlocksTop+" to "+upperBoundOfSearch+"....")
-                      while(loadedBlocksTop<parseBlock){
-                        //console.log(" ++ Parsing Block "+parseBlock+" for transactions...")
-                        updatedTxs = (await this.parseBlocks(parseBlock,recentTxs,transactionsByAddress)) || updatedTxs
-                        parseBlock--
-                      }
-                    }
-
-                    if(updatedTxs||!this.state.recentTxs){
-                      this.sortAndSaveTransactions(recentTxs,transactionsByAddress)
-                    }
-
-                    localStorage.setItem(this.state.account+"loadedBlocksTop",upperBoundOfSearch)
-                    this.setState({parsingTheChain:false,loadedBlocksTop:upperBoundOfSearch})
+          <Dapparatus
+              config={{
+                DEBUG: false,
+                hide: true,
+                requiredNetwork: ['Unknown', 'xDai'],
+                metatxAccountGenerator: false,
+              }}
+              //used to pass a private key into Dapparatus
+              newPrivateKey={this.state.newPrivateKey}
+              fallbackWeb3Provider={WEB3_PROVIDER}
+              network="LeapTestnet"
+              xdaiProvider={XDAI_PROVIDER}
+              onUpdate={async (state) => {
+                //console.log("DAPPARATUS UPDATE",state)
+                if(ERC20TOKEN){
+                  delete state.balance
+                }
+                if (state.xdaiweb3) {
+                  let pdaiContract;
+                  try{
+                    pdaiContract = new state.xdaiweb3.eth.Contract(require("./contracts/StableCoin.abi.js"),P_DAI_TOKEN_ADDR)
+                  }catch(e){
+                    console.log("ERROR LOADING DAI Stablecoin Contract",e)
                   }
-                  //console.log("~~ DONE PARSING SET ~~")
+                  this.setState({pdaiContract});
+                }
+                if (state.web3Provider) {
+                  state.web3 = new Web3(state.web3Provider)
+                  this.setState(state,()=>{
+                    //console.log("state set:",this.state)
+                    if(this.state.possibleNewPrivateKey){
+                      this.dealWithPossibleNewPrivateKey()
+                    }
+                    if(!this.state.parsingTheChain){
+                      this.setState({parsingTheChain:true},async ()=>{
+                        let upperBoundOfSearch = this.state.block
+                        //parse through recent transactions and store in local storage
+  
+                        if(localStorage&&typeof localStorage.setItem == "function"){
+  
+                          let initResult = this.initRecentTxs()
+                          let recentTxs = initResult[0]
+                          let transactionsByAddress = initResult[1]
+  
+                          let loadedBlocksTop = this.state.loadedBlocksTop
+                          if(!loadedBlocksTop){
+                            loadedBlocksTop = localStorage.getItem(this.state.account+"loadedBlocksTop")
+                          }
+                          //  Look back through previous blocks since this account
+                          //  was last online... this could be bad. We might need a
+                          //  central server keeping track of all these and delivering
+                          //  a list of recent transactions
+  
+                          let updatedTxs = false
+                          if(!loadedBlocksTop || loadedBlocksTop<this.state.block){
+                            if(!loadedBlocksTop) loadedBlocksTop = Math.max(2,this.state.block-5)
+  
+                            if(this.state.block - loadedBlocksTop > MAX_BLOCK_TO_LOOK_BACK){
+                              loadedBlocksTop = this.state.block-MAX_BLOCK_TO_LOOK_BACK
+                            }
+  
+                            let paddedLoadedBlocks = parseInt(loadedBlocksTop)+BLOCKS_TO_PARSE_PER_BLOCKTIME
+                            //console.log("choosing the min of ",paddedLoadedBlocks,"and",this.state.block)
+                            let parseBlock=Math.min(paddedLoadedBlocks,this.state.block)
+  
+                            //console.log("MIN:",parseBlock)
+                            upperBoundOfSearch = parseBlock
+                            console.log(" +++++++======= Parsing recent blocks ~"+this.state.block)
+                            //first, if we are still back parsing, we need to look at *this* block too
+                            if(upperBoundOfSearch<this.state.block){
+                              for(let b=this.state.block;b>this.state.block-6;b--){
+                                //console.log(" ++ Parsing *CURRENT BLOCK* Block "+b+" for transactions...")
+                                updatedTxs = (await this.parseBlocks(b,recentTxs,transactionsByAddress)) || updatedTxs
+                              }
+                            }
+                            console.log(" +++++++======= Parsing from "+loadedBlocksTop+" to "+upperBoundOfSearch+"....")
+                            while(loadedBlocksTop<parseBlock){
+                              //console.log(" ++ Parsing Block "+parseBlock+" for transactions...")
+                              updatedTxs = (await this.parseBlocks(parseBlock,recentTxs,transactionsByAddress)) || updatedTxs
+                              parseBlock--
+                            }
+                          }
+  
+                          if(updatedTxs||!this.state.recentTxs){
+                            this.sortAndSaveTransactions(recentTxs,transactionsByAddress)
+                          }
+  
+                          localStorage.setItem(this.state.account+"loadedBlocksTop",upperBoundOfSearch)
+                          this.setState({parsingTheChain:false,loadedBlocksTop:upperBoundOfSearch})
+                        }
+                        //console.log("~~ DONE PARSING SET ~~")
+                      })
+                    }
+                  })
+                }
+              }}
+              />
+              <Gas
+              network={this.state.network}
+              onUpdate={(state)=>{
+                console.log("Gas price update:",state)
+                this.setState(state,()=>{
+                  this.state.gwei += 0.1
+                  console.log("GWEI set:",this.state)
                 })
-              }
-            })
-          }
-        }}
-        />
-        <Gas
-        network={this.state.network}
-        onUpdate={(state)=>{
-          console.log("Gas price update:",state)
-          this.setState(state,()=>{
-            this.state.gwei += 0.1
-            console.log("GWEI set:",this.state)
-          })
-        }}
-        />
-        {eventParser}
-      </div>
-    </div>
-    </I18nextProvider>
-  )
-}
+              }}
+              />
+              {eventParser}
+            </div>
+          </div>
+        </I18nextProvider>
+      </ThemeProvider>
+    )
+  }
 }
 
 //<iframe id="galleassFrame" style={{zIndex:99,position:"absolute",left:0,top:0,width:800,height:600}} src="https://galleass.io" />
 const NFT_COLOR_BASE = 32769; // 2^15 + 1
 const isNFT = (color: Number): boolean => color >= NFT_COLOR_BASE;
 
-async function tokenSend(to,value,gasLimit,txData,cb){
-  let {account,web3} = this.state
-
-  console.log("tokenSend")
-
-  let weiValue =  this.state.web3.utils.toWei(""+value, 'ether')
-
-  let setGasLimit = 60000
-  if(typeof gasLimit == "function"){
-    cb=gasLimit
-  }else if(gasLimit){
-    setGasLimit=gasLimit
+// NOTE: This function is used heavily by legacy code. We've reimplemented it's
+// body though.
+async function tokenSend(to, value, gasLimit, txData, cb) {
+  let { account, web3, xdaiweb3, metaAccount } = this.state
+  if(typeof gasLimit === "function"){
+    cb = gasLimit
   }
 
-  let data = false
-  if(typeof txData == "function"){
+  if(typeof txData === "function"){
     cb = txData
-  }else{
-    data = txData
   }
 
-  const color = 0;
-  let result;
+  value = xdaiweb3.utils.toWei(""+value, "ether")
+  const color = await xdaiweb3.getColor(P_DAI_TOKEN_ADDR);
+  try {
+    const receipt = await tokenSendV2(
+      account,
+      to,
+      value,
+      color,
+      xdaiweb3,
+      web3,
+      metaAccount && metaAccount.privateKey
+    )
 
-  this.state.xdaiweb3
-    .getUnspent(this.state.account)
-    .then(unspent => {
-      if (isNFT(color)) {
-        const { outpoint } = unspent.find(
-          ({ output }) =>
-            Number(output.color) === Number(color) &&
-            equal(bi(output.value), bi(weiValue))
-        );
-        const inputs = [new Input(outpoint)];
-        const outputs = [new Output(weiValue, to, color)];
-        return Tx.transfer(inputs, outputs);
-      }
-
-      const inputs = helpers.calcInputs(
-        unspent,
-        this.state.account,
-        weiValue,
-        color
-      );
-      const outputs = helpers.calcOutputs(
-        unspent,
-        inputs,
-        this.state.account,
-        to,
-        weiValue,
-        color
-      );
-      return Tx.transfer(inputs, outputs);
-    })
-    .then(tx => {
-      if(this.state.metaAccount){
-        const privs = [];
-        for(const input of tx.inputs){
-          privs.push(this.state.metaAccount.privateKey);
-        }
-        return tx.sign(privs);
-      } else {
-        return tx.signWeb3(web3);
-      }
-    })
-    .then(
-      signedTx => (this.state.xdaiweb3.eth.sendSignedTransaction(signedTx.hex()))
-      ,
-      err => {
-        console.log(err);
-      }
-    ).then(receipt => {
-      cb(receipt);
+    cb(null, receipt);
+  } catch(err) {
+    cb({
+      error: err,
+      request: { account, to, value, color },
     });
+    // NOTE: The callback cb of tokenSend is not used correctly in the expected
+    // format cb(error, receipt) throughout the app. We hence cannot send
+    // errors in the callback :( When no receipt is returned (e.g. null), the
+    // burner wallet will react with not resolving the "sending" view. This is
+    // not ideal and should be changed in the future. We opened an issue on the
+    // upstream repo: https://github.com/austintgriffith/burner-wallet/issues/157
+  }
+}
+
+async function tokenSendV2(from, to, value, color, xdaiweb3, web3, privateKey) {
+  const unspent = await xdaiweb3.getUnspent(from)
+
+  let transaction;
+  if (isNFT(color)) {
+    const { outpoint } = unspent.find(
+      ({ output }) =>
+        Number(output.color) === Number(color) &&
+        equal(bi(output.value), bi(value))
+    );
+    const inputs = [new Input(outpoint)];
+    const outputs = [new Output(value, to, color)];
+    transaction = Tx.transfer(inputs, outputs);
+  } else {
+    transaction = Tx.transferFromUtxos(unspent, from, to, value, color)
+  }
+
+  const signedTx = privateKey ? await transaction.signAll(privateKey) : await transaction.signWeb3(web3);
+  const rawTx = signedTx.hex();
+
+  // NOTE: Leapdao's Plasma implementation currently doesn't return receipts.
+  // We hence have to periodically query the leap node to check whether our
+  // transaction has been included into the chain. We assume that if it hasn't
+  // been included after 5000ms (50 rounds at a 100ms timeout), it failed.
+  // Unfortunately, at this point we cannot provide an error message for why
+
+  let receipt;
+  let rounds = 50;
+
+  while (rounds--) {
+    // redundancy rules ✊
+    try {
+      // web3 hangs here on invalid txs, trying to get receipt?
+      // await this.web3.eth.sendSignedTransaction(tx.hex());
+      await new Promise(
+        (resolve, reject) => {
+          xdaiweb3.currentProvider.send(
+            { jsonrpc: '2.0', id: 42, method: 'eth_sendRawTransaction', 'params': [rawTx] },
+            (err, res) => { if (err) { return reject(err); } resolve(res); }
+          );
+        }
+      );
+    } catch(err) {
+      // ignore for now
+      console.log(err);
+      // NOTE: Leap's node currently doesn't implement the "newBlockHeaders"
+      // JSON-RPC call. When a transaction is rejected by a node,
+      // sendSignedTransaction hence throws an error. We simply ignore this
+      // error here and use the polling tactic below. For more details see:
+      // https://github.com/leapdao/leap-node/issues/255
+
+      // const messageToIgnore = "Failed to subscribe to new newBlockHeaders to confirm the transaction receipts.";
+      // NOTE: In the case where we want to ignore web3's error message, there's
+      // "\r\n {}" included in the error message, which is why we cannot
+      // compare with the equal operator, but have to use String.includes.
+      // if (!err.message.includes(messageToIgnore)) {
+      //  throw err;
+      // }
+    }
+
+    let res = await xdaiweb3.eth.getTransaction(signedTx.hash())
+
+    if (res && res.blockHash) {
+      receipt = res;
+      break;
+    }
+
+    // wait ~100ms
+    await new Promise((resolve) => setTimeout(() => resolve(), 100));
+  }
+
+  if (receipt) {
+    return receipt;
+  }
+
+  throw new Error("Transaction wasn't included into a block.");
 }
 
 let sortByBlockNumberDESC = (a,b)=>{
@@ -2169,8 +2286,6 @@ let sortByBlockNumber = (a,b)=>{
   }
   return 0
 }
-
-export default App;
 
 String.prototype.replaceAll = function(search, replacement) {
     var target = this;
