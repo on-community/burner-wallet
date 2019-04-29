@@ -409,7 +409,6 @@ export default class History extends React.Component {
             {chatInput}
           </div>
           <div className="col-2 p-1">
-            {sendChatButton}
           </div>
         </div>
       )
@@ -434,7 +433,6 @@ export default class History extends React.Component {
            {chatInput}
           </div>
           <div className="col-2 p-1">
-            {sendChatButton}
           </div>
         </div>
       )
@@ -470,19 +468,11 @@ export default class History extends React.Component {
             <div className="col-2 p-1">
             </div>
             <div className="col-4 p-1">
-              {waveButton}
             </div>
 
           </div>
 
         {txns}
-
-        <Ruler />
-
-        <div name="sendForm"></div>
-        {sendForm}
-
-
       </div>
     )
   }
