@@ -1,13 +1,13 @@
 import React from 'react';
 import { Scaler } from "dapparatus";
 import Blockies from 'react-blockies';
-import Balance from "./Balance";
 import { scroller } from 'react-scroll'
 import Linkify from 'react-linkify'
 import {toArray} from 'react-emoji-render';
 import Ruler from "./Ruler";
 import {CopyToClipboard} from "react-copy-to-clipboard";
 import i18next from 'i18next';
+import { OutlineButton } from 'rimble-ui'
 const QRCode = require('qrcode.react');
 const Transaction = require("ethereumjs-tx")
 const EthUtil = require('ethereumjs-util')
@@ -409,7 +409,6 @@ export default class History extends React.Component {
             {chatInput}
           </div>
           <div className="col-2 p-1">
-            {sendChatButton}
           </div>
         </div>
       )
@@ -434,7 +433,6 @@ export default class History extends React.Component {
            {chatInput}
           </div>
           <div className="col-2 p-1">
-            {sendChatButton}
           </div>
         </div>
       )
@@ -458,30 +456,23 @@ export default class History extends React.Component {
 
             <div className="col-4 p-1">
               <CopyToClipboard text={target}>
-                <button className="btn btn-large w-100" style={buttonStyle.secondary}
+                <OutlineButton
+                  width={1}
                   onClick={() => this.props.changeAlert({type: 'success', message: target+' copied to clipboard'})}>
                   <Scaler config={{startZoomAt:400,origin:"50% 50%"}}>
                     <i className="fas fa-save"/> Copy
                   </Scaler>
-                </button>
+                </OutlineButton>
               </CopyToClipboard>
             </div>
             <div className="col-2 p-1">
             </div>
             <div className="col-4 p-1">
-              {waveButton}
             </div>
 
           </div>
 
         {txns}
-
-        <Ruler />
-
-        <div name="sendForm"></div>
-        {sendForm}
-
-
       </div>
     )
   }

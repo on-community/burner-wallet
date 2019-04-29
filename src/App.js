@@ -89,9 +89,9 @@ let mainStyle = {
   height:"100%",
   backgroundImage:"linear-gradient(#292929, #191919)",
   backgroundColor:"#191919",
-  hotColor:"#F69E4D",
-  mainColorAlt:"#fa7d36",
-  mainColor:"#F76B1C",
+  hotColor:"white",
+  mainColorAlt:"white",
+  mainColor:"white",
 }
 
 let title = i18n.t('app_name')
@@ -1381,7 +1381,6 @@ export default class App extends Component {
               let defaultBalanceDisplay = (
                 <div>
                   <Balance icon={xdai} selected={false} text={"MNY"} amount={this.state.xdaiBalance} address={account} dollarDisplay={dollarDisplay} />
-                  <Ruler/>
                 </div>
               )
 
@@ -1390,7 +1389,6 @@ export default class App extends Component {
                 extraTokens = (
                   <div>
                     <Balance icon={ERC20IMAGE} selected={selected} text={"MNY"} amount={this.state.balance} address={account} dollarDisplay={dollarDisplay} />
-                    <Ruler/>
                   </div>
                 )
                 defaultBalanceDisplay = extraTokens
@@ -1737,6 +1735,7 @@ export default class App extends Component {
                         <NavCard title={i18n.t('request_funds_title')} goBack={this.goBack.bind(this)}/>
                         {defaultBalanceDisplay}
                         <RequestFunds
+                          block={this.state.block}
                           view={this.state.view}
                           mainStyle={mainStyle}
                           buttonStyle={buttonStyle}
