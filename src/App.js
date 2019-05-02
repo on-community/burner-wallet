@@ -38,7 +38,6 @@ import Footer from './components/Footer';
 import Loader from './components/Loader';
 import burnerlogo from './burnerwallet.png';
 import BurnWallet from './components/BurnWallet'
-import Exchange from './components/Exchange'
 import Bottom from './components/Bottom';
 import customRPCHint from './customRPCHint.png';
 import namehash from 'eth-ens-namehash'
@@ -55,7 +54,6 @@ import cypherpunk from './cypherpunk.png';
 import eth from './ethereum.png';
 import dai from './dai.jpg';
 import xdai from './xdai.png';
-import Wyre from './services/wyre';
 
 let base64url = require('base64url')
 const EthCrypto = require('eth-crypto');
@@ -402,9 +400,6 @@ export default class App extends Component {
     this.setState(update)
   }
   componentDidMount(){
-
-    Wyre.configure();
-
 
     document.body.style.backgroundColor = mainStyle.backgroundColor
     console.log("document.getElementsByClassName('className').style",document.getElementsByClassName('.btn').style)
@@ -1487,10 +1482,6 @@ export default class App extends Component {
 
                       <Balance icon={xdai} selected={selected} text={"MNY"} amount={this.state.xdaiBalance} address={account} dollarDisplay={dollarDisplay}/>
 
-                      <Balance icon={dai} selected={selected} text={"DAI"} amount={this.state.daiBalance} address={account} dollarDisplay={dollarDisplay}/>
-
-                      <Balance icon={eth} selected={selected} text={"ETH"} amount={parseFloat(this.state.ethBalance) * parseFloat(this.state.ethprice)} address={account} dollarDisplay={dollarDisplay}/>
-
                       {badgeDisplay}
 
                       <MainCard
@@ -1874,55 +1865,6 @@ export default class App extends Component {
                       />
                   </div>
                 );
-
-                case 'exchange':
-                return (
-                  <div>
-                    {this.state.scannerOpen ? sendByScan : null}
-                    <Card>
-
-                      <NavCard title={i18n.t('exchange_title')} goBack={this.goBack.bind(this)}/>
-                      <Exchange
-                        eth={eth}
-                        dai={dai}
-                        xdai={xdai}
-                        ERC20NAME={ERC20NAME}
-                        ERC20IMAGE={ERC20IMAGE}
-                        ERC20TOKEN={ERC20TOKEN}
-                        ERC20VENDOR={ERC20VENDOR}
-                        ethprice={this.state.ethprice}
-                        ethBalance={this.state.ethBalance}
-                        daiBalance={this.state.daiBalance}
-                        xdaiBalance={this.state.xdaiBalance}
-                        mainnetweb3={this.state.mainnetweb3}
-                        xdaiweb3={this.state.xdaiweb3}
-                        daiContract={this.state.daiContract}
-                        pdaiContract={this.state.pdaiContract}
-                        ensContract={this.state.ensContract}
-                        bridgeContract={this.state.bridgeContract}
-                        isVendor={this.state.isVendor}
-                        isAdmin={this.state.isAdmin}
-                        contracts={this.state.contracts}
-                        buttonStyle={buttonStyle}
-                        changeAlert={this.changeAlert}
-                        setGwei={this.setGwei}
-                        network={this.state.network}
-                        tx={this.state.tx}
-                        pTx={this.state.pTx}
-                        web3={this.state.web3}
-                        send={this.state.send}
-                        nativeSend={this.state.nativeSend}
-                        address={account}
-                        balance={balance}
-                        goBack={this.goBack.bind(this)}
-                        dollarDisplay={dollarDisplay}
-                        tokenSendV2={tokenSendV2.bind(this)}
-                        marketMaker={MARKET_MAKER}
-                      />
-                    </Card>
-                  </div>
-                );
-  
                 case 'vendors':
                 return (
                   <div>
