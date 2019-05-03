@@ -16,7 +16,6 @@
     "dapparatus": "leapdao/dapparatus#f74eff4",
     "dotenv": "^6.2.0",
     "eccrypto": "^1.1.0",
-    "erc721-balance": "TimDaub/erc721-balance#master",
     "eth-crypto": "^1.3.2",
     "eth-ens-namehash": "^2.0.8",
     "ethereum-mnemonic-privatekey-utils": "^1.0.5",
