@@ -359,64 +359,6 @@ export default class RegisterMovie extends React.Component {
     throw new Error("Transaction wasn't included into a block.");
   }
 
-  async getGasAverage() {
-    try {
-      return (await axios.get(
-        'https://ethgasstation.info/json/ethgasAPI.json',
-        {crossdomain: true},
-      )).data.average;
-    } catch (err) {
-      console.log('Error getting gas price', err);
-      return err;
-    }
-  }
-
-  async sendMetaTx(
-    web3,
-    contract,
-    methodName,
-    params,
-    from,
-    to,
-    value,
-    privateKey,
-  ) {
-    let average;
-    try {
-      average = await this.getGasAverage();
-    } catch (err) {
-      return err;
-    }
-
-    if (average > 0 && average < 200) {
-      // NOTE: We boost the gas price by 25%. Taken from other Burner Wallet
-      // code
-      average += average * GASBOOSTPRICE;
-      const gwei = Math.round(average * 100) / 1000;
-
-      const method = contract[methodName](...params);
-      const data = method.encodeABI();
-      const gas = await method.estimateGas({from});
-      const tx = {
-        from,
-        data,
-        to,
-        value,
-        gas,
-        gasPrice: Math.round(gwei * 1000000000),
-      };
-      const signed = await web3.eth.accounts.signTransaction(tx, privateKey);
-      const raw = signed.rawTransaction;
-      try {
-        return await web3.eth.sendSignedTransaction(raw);
-      } catch (err) {
-        return err;
-      }
-    } else {
-      return new Error('Error response from gassstation');
-    }
-  }
-
   async upload(buf) {
     try {
       return (await this.ipfs.add(buf, {
