@@ -89,8 +89,17 @@ export default class RegisterMovie extends React.Component {
   }
 
   componentWillReceiveProps(newProps) {
-    if (this.props.scannerState !== newProps.scannerState) {
-      this.setState({rightholderAddress: newProps.scannerState.toAddress});
+    const {rightholderAddress} = this.state;
+    if (
+      this.props.scannerState !== newProps.scannerState ||
+      newProps.scannerState !== rightholderAddress
+    ) {
+      this.setState(
+        {rightholderAddress: newProps.scannerState.toAddress},
+        () => {
+          this.canRegister();
+        },
+      );
     }
   }
 
