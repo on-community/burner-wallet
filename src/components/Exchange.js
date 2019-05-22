@@ -126,35 +126,9 @@ export default class Exchange extends React.Component {
     setInterval(() => this.updatePendingExits(daiAddress, xdaiweb3), 5000);
   }
 
-  async maybeApprovePDai(amountWei) {
-
-    const pDaiAllowance = await this.props.daiContract.methods.allowance(
-      this.state.daiAddress,
-      this.props.pdaiContract._address,
-    ).call({ from: this.state.daiAddress })
-
-    // Only trigger allowance dialogue when amount is more than allowance
-    if (new BN(pDaiAllowance).lt(new BN(amountWei))) {
-      this.setState({
-        loaderBarColor:"#f5eb4a",
-        loaderBarStatusText: "Approving MNY amount for Plasma bridge"
-      })
-
-      const metaMaskDaiContract = new this.props.web3.eth.Contract(this.props.daiContract._jsonInterface,this.props.daiContract._address)
-
-      const receipt = await this.props.pTx(
-        metaMaskDaiContract.methods.approve(this.props.pdaiContract._address, amountWei),
-        150000, 0, 0,
-      );
-
-      console.log(receipt);
-      return receipt;
-    }
-  }
-
   updatePendingExits(daiAddress, xdaiweb3) {
     const account = daiAddress;
-    const tokenAddr = this.props.pdaiContract._address;
+    const tokenAddr = this.props.daiContract._address;
 
     xdaiweb3.getColor(tokenAddr)
     .then(color => {
@@ -423,9 +397,7 @@ export default class Exchange extends React.Component {
         const amountWei = this.state.mainnetweb3.utils.toWei(""+amount,"ether")
 
         let paramsObject
-        if (this.props.network === "LeapTestnet" || this.props.network === "LeapMainnet") {
-          await this.maybeApprovePDai(amountWei);
-
+        if (this.props.network === "LeapTestnet" || this.props.network == "LeapMainnet") {
           const allowance = await this.props.daiContract.methods.allowance(
             this.state.daiAddress,
             this.props.bridgeContract._address
@@ -516,8 +488,6 @@ export default class Exchange extends React.Component {
         const amountWei =  web3.utils.toWei(""+amount,"ether")
 
         if (this.props.network === "LeapTestnet" || this.props.network === "LeapMainnet") {
-          await this.maybeApprovePDai(amountWei);
-
           const allowance = await daiContract.methods.allowance(
             this.state.daiAddress,
             bridgeContract._address
@@ -874,7 +844,6 @@ export default class Exchange extends React.Component {
                 console.log("AMOUNT:",this.state.amount,"DAI BALANCE:",this.props.daiBalance)
                 console.log("Withdrawing to ",toDaiBridgeAccount)
 
-                let exitableAmount = this.state.amount;
 
                 if(this.state.xdaiMetaAccount){
                   //send funds using metaaccount on xdai
@@ -894,39 +863,31 @@ export default class Exchange extends React.Component {
                   };
 
                   // TODO: get real decimals
-                  const amount = bi(exitableAmount * 10 ** 18);
-                  const tokenAddr = this.props.pdaiContract._address;
-                  const color = await this.state.xdaiweb3.getColor(tokenAddr);
-
-                  // special handler for MNY
-                  if (!this.state.notSundai) {
-                    this.directSell(amount, color);
-                    return;
-                  }
-
-                  Exit.fastSellAmount(
-                    this.state.daiAddress, amount, color,
-                    this.state.xdaiweb3, this.props.web3,
-                    `${this.props.marketMaker}/sellExit`,
-                    signer,
-                  ).then(rsp => {
-                    console.log(rsp);
-                    this.updatePendingExits(this.state.daiAddress, this.state.xdaiweb3);
-                    this.setState({ amount: "", daiToXdaiMode: false });
-                  }).catch(err => {
-                    console.log(err);
-                    this.props.changeAlert({
-                      type: 'warning',
-                      message: 'Failed to exit MNY'
+                  const amount = bi(this.state.amount * 10 ** 18);
+                  const tokenAddr = this.props.daiContract._address;
+                  console.log('MetA!!!', signer);
+                  this.state.xdaiweb3.getColor(tokenAddr)
+                    .then(color =>
+                      Exit.fastSellAmount(
+                        this.state.daiAddress, amount, color,
+                        this.state.xdaiweb3, this.props.web3,
+                        'https://2nuxsb25he.execute-api.eu-west-1.amazonaws.com/testnet/sellExit',
+                        signer,
+                      )
+                    ).then(rsp => {
+                      console.log(rsp);
+                      this.updatePendingExits(this.state.daiAddress, this.state.xdaiweb3);
+                      this.setState({ amount: "", daiToXdaiMode: false });
+                    }).catch(err => {
+                      console.log(err);
                     });
-                  });
 
                 }else{
 
                   //BECAUSE THIS COULD BE ON A TOKEN, THE SEND FUNCTION IS SENDING TOKENS TO THE BRIDGE HAHAHAHA LETs FIX THAT
                   if(this.props.ERC20TOKEN){
-                    console.log("native sending ",exitableAmount," to ",toDaiBridgeAccount)
-                    this.props.nativeSend(toDaiBridgeAccount, exitableAmount, 120000, (err, result) => {
+                    console.log("native sending ",this.state.amount," to ",toDaiBridgeAccount)
+                    this.props.nativeSend(toDaiBridgeAccount, this.state.amount, 120000, (err, result) => {
                       console.log("RESUTL!!!!",result)
                       if(result && result.transactionHash){
                         this.setState({
@@ -941,32 +902,23 @@ export default class Exchange extends React.Component {
                     })
                   }else{
                     // TODO: get real decimals
-                    let amount = bi(exitableAmount * 10 ** 18);
-                    const tokenAddr = this.props.pdaiContract._address;
+                    const amount = bi(this.state.amount * 10 ** 18);
+                    const tokenAddr = this.props.daiContract._address;
 
-                    const color = await this.state.xdaiweb3.getColor(tokenAddr);
-
-                    // special handler for MNY
-                    if (!this.state.notSundai) {
-                      this.directSell(amount, color);
-                      return;
-                    }
-
-                    Exit.fastSellAmount(
-                      this.state.daiAddress, amount, color,
-                      this.state.xdaiweb3, this.props.web3,
-                      `${this.props.marketMaker}/sellExit`
-                    ).then(rsp => {
-                      console.log(rsp);
-                      this.updatePendingExits(this.state.daiAddress, this.state.xdaiweb3);
-                      this.setState({ amount: "", daiToXdaiMode: false });
-                    }).catch(err => {
-                      console.log(err);
-                      this.props.changeAlert({
-                        type: 'warning',
-                        message: 'Failed to exit MNY'
+                    this.state.xdaiweb3.getColor(tokenAddr)
+                      .then(color =>
+                        Exit.fastSellAmount(
+                          this.state.daiAddress, amount, color,
+                          this.state.xdaiweb3, this.props.web3,
+                          'https://2nuxsb25he.execute-api.eu-west-1.amazonaws.com/testnet/sellExit'
+                        )
+                      ).then(rsp => {
+                        console.log(rsp);
+                        this.updatePendingExits(this.state.daiAddress, this.state.xdaiweb3);
+                        this.setState({ amount: "", daiToXdaiMode: false });
+                      }).catch(err => {
+                        console.log(err);
                       });
-                    });
                   }
                 }
               }}>
