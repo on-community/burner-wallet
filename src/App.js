@@ -31,13 +31,7 @@ import Bottom from './components/Bottom';
 import incogDetect from './services/incogDetect.js'
 import { Card, Box, ThemeProvider } from 'rimble-ui';
 import theme from "./theme";
-<<<<<<< HEAD
 import getConfig from "./config";
-=======
-import config from "./config";
-import bs58 from "bs58";
-
->>>>>>> config.json => config.js
 //https://github.com/lesnitsky/react-native-webview-messaging/blob/v1/examples/react-native/web/index.js
 import RNMessageChannel from 'react-native-webview-messaging';
 import eth from './ethereum.png';
@@ -66,7 +60,6 @@ let title = i18n.t('app_name')
 let titleImage = (
   <span style={{paddingRight:20,paddingLeft:16}}><i className="fas fa-fire" /></span>
 )
-
 
 // TODO: Consolidate this with theme.js
 let innerStyle = {
