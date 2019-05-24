@@ -397,7 +397,7 @@ export default class Exchange extends React.Component {
         const amountWei = this.state.mainnetweb3.utils.toWei(""+amount,"ether")
 
         let paramsObject
-        if (this.props.network === "LeapTestnet" || this.props.network == "LeapMainnet") {
+        if (this.props.network === "LeapTestnet" || this.props.network === "LeapMainnet") {
           const allowance = await this.props.daiContract.methods.allowance(
             this.state.daiAddress,
             this.props.bridgeContract._address
@@ -946,7 +946,7 @@ export default class Exchange extends React.Component {
             icon={'ArrowDownward'}
             disabled={
               buttonsDisabled ||
-              (!this.state.notSundai && this.state.exitableSunDaiBalance === 0) ||
+              (!this.state.notSundai && this.state.exitableSunDaiBalance ===0) ||
               parseFloat(this.props.xdaiBalance) === 0
             }
             onClick={()=>{
